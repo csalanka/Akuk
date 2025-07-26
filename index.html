@@ -198,11 +198,25 @@
         .type-electronics { background: #17a2b8; }
         .type-other { background: #6c757d; }
 
-        .capacity-range {
-            font-family: 'Courier New', monospace;
+        .frequency-badge, .priority-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
             font-size: 12px;
-            color: #495057;
+            font-weight: 500;
+            color: white;
         }
+
+        .freq-napi { background: #dc3545; }
+        .freq-heti { background: #fd7e14; }
+        .freq-havi { background: #ffc107; color: #212529; }
+        .freq-alkalmi { background: #20c997; }
+        .freq-ritkan { background: #6c757d; }
+        .freq-veszhelyzeti { background: #e83e8c; }
+
+        .priority-kritikus { background: #dc3545; }
+        .priority-fontos { background: #fd7e14; }
+        .priority-normal { background: #28a745; }
+        .priority-alacsony { background: #6c757d; }
 
         .modal {
             display: none;
@@ -395,7 +409,8 @@
                         <th>Akku Típus</th>
                         <th>Db</th>
                         <th>Töltő</th>
-                        <th>Kapacitás (mAh)</th>
+                        <th>Gyakoriság</th>
+                        <th>Prioritás</th>
                         <th>Megjegyzés</th>
                         <th>Műveletek</th>
                     </tr>
@@ -470,6 +485,21 @@
                             <input type="number" id="batteryCount" class="form-control" min="1" value="1" required />
                         </div>
                         <div class="form-group">
+                            <label for="usageFrequency">Használati gyakoriság:</label>
+                            <select id="usageFrequency" class="form-control" required>
+                                <option value="">Válassz gyakoriságot...</option>
+                                <option value="Napi">Napi használat</option>
+                                <option value="Heti">Heti használat</option>
+                                <option value="Havi">Havi használat</option>
+                                <option value="Alkalmi">Alkalmi használat</option>
+                                <option value="Ritkán">Ritkán használt</option>
+                                <option value="Vészhelyzeti">Vészhelyzeti (mindig kész)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
                             <label for="chargerType">Töltő Típus:</label>
                             <select id="chargerType" class="form-control" required>
                                 <option value="">Válassz töltő típust...</option>
@@ -481,16 +511,15 @@
                                 <option value="USB-A">USB-A</option>
                             </select>
                         </div>
-                    </div>
-
-                    <div class="form-row">
                         <div class="form-group">
-                            <label for="minCapacity">Min. Kapacitás (mAh):</label>
-                            <input type="number" id="minCapacity" class="form-control" min="0" step="100" />
-                        </div>
-                        <div class="form-group">
-                            <label for="maxCapacity">Max. Kapacitás (mAh):</label>
-                            <input type="number" id="maxCapacity" class="form-control" min="0" step="100" />
+                            <label for="priority">Prioritás:</label>
+                            <select id="priority" class="form-control" required>
+                                <option value="">Válassz prioritást...</option>
+                                <option value="Kritikus">Kritikus (mindig működjön)</option>
+                                <option value="Fontos">Fontos (gyakran használt)</option>
+                                <option value="Normál">Normál</option>
+                                <option value="Alacsony">Alacsony prioritás</option>
+                            </select>
                         </div>
                     </div>
 
@@ -521,8 +550,8 @@
                 batteryType: "Li-ion_18V",
                 batteryCount: 1,
                 chargerType: "Gyári_töltő",
-                minCapacity: 4000,
-                maxCapacity: 5000,
+                usageFrequency: "Heti",
+                priority: "Fontos",
                 notes: "Piros színű",
                 status: "active"
             },
@@ -533,8 +562,8 @@
                 batteryType: "NiMH_AA",
                 batteryCount: 4,
                 chargerType: "Dokkoló_töltő",
-                minCapacity: 2000,
-                maxCapacity: 2500,
+                usageFrequency: "Vészhelyzeti",
+                priority: "Kritikus",
                 notes: "Éjjeliszekrényen",
                 status: "active"
             },
@@ -545,8 +574,8 @@
                 batteryType: "NiMH_AA",
                 batteryCount: 2,
                 chargerType: "Univerzális_töltő",
-                minCapacity: 800,
-                maxCapacity: 2500,
+                usageFrequency: "Napi",
+                priority: "Normál",
                 notes: "Sony távirányító",
                 status: "active"
             }
@@ -624,7 +653,8 @@
                     <td><span class="device-type ${getTypeClass(device.batteryType)}">${device.batteryType}</span></td>
                     <td><strong>${device.batteryCount}</strong></td>
                     <td>${device.chargerType}</td>
-                    <td><span class="capacity-range">${device.minCapacity || '-'} - ${device.maxCapacity || '-'}</span></td>
+                    <td><span class="frequency-badge ${getFrequencyClass(device.usageFrequency)}">${device.usageFrequency || '-'}</span></td>
+                    <td><span class="priority-badge ${getPriorityClass(device.priority)}">${device.priority || '-'}</span></td>
                     <td>${device.notes || '-'}</td>
                     <td>
                         <button class="btn btn-primary" style="padding: 5px 10px; font-size: 12px; margin-right: 5px;" onclick="editDevice(${devices.indexOf(device)})">✏️</button>
@@ -642,6 +672,18 @@
                 'inactive': 'Inaktív'
             };
             return statusMap[status] || 'Aktív';
+        }
+
+        function getFrequencyClass(frequency) {
+            const freqMap = {
+                'Napi': 'freq-napi',
+                'Heti': 'freq-heti', 
+                'Havi': 'freq-havi',
+                'Alkalmi': 'freq-alkalmi',
+                'Ritkán': 'freq-ritkan',
+                'Vészhelyzeti': 'freq-veszhelyzeti'
+            };
+            return freqMap[frequency] || '';
         }
 
         function getTypeClass(batteryType) {
@@ -706,9 +748,9 @@
             
             document.getElementById('batteryType').value = device.batteryType;
             document.getElementById('batteryCount').value = device.batteryCount;
+            document.getElementById('usageFrequency').value = device.usageFrequency || '';
             document.getElementById('chargerType').value = device.chargerType;
-            document.getElementById('minCapacity').value = device.minCapacity || '';
-            document.getElementById('maxCapacity').value = device.maxCapacity || '';
+            document.getElementById('priority').value = device.priority || '';
             document.getElementById('notes').value = device.notes || '';
             
             document.getElementById('deviceModal').style.display = 'block';
@@ -733,9 +775,9 @@
                 location: location,
                 batteryType: document.getElementById('batteryType').value,
                 batteryCount: parseInt(document.getElementById('batteryCount').value),
+                usageFrequency: document.getElementById('usageFrequency').value,
                 chargerType: document.getElementById('chargerType').value,
-                minCapacity: parseInt(document.getElementById('minCapacity').value) || null,
-                maxCapacity: parseInt(document.getElementById('maxCapacity').value) || null,
+                priority: document.getElementById('priority').value,
                 notes: document.getElementById('notes').value,
                 status: 'active'
             };
@@ -748,11 +790,6 @@
 
             if (!device.location) {
                 alert('A hely megadása kötelező!');
-                return;
-            }
-
-            if (device.minCapacity && device.maxCapacity && device.minCapacity > device.maxCapacity) {
-                alert('A minimum kapacitás nem lehet nagyobb a maximumnál!');
                 return;
             }
 
@@ -860,7 +897,7 @@
         }
 
         function exportCSV() {
-            const headers = ['Eszköz_ID', 'Eszköz_név', 'Hely', 'Akkutípus', 'Akku_darab', 'Töltő_típus', 'Min_kapacitás_mAh', 'Max_kapacitás_mAh', 'Megjegyzés'];
+            const headers = ['Eszköz_ID', 'Eszköz_név', 'Hely', 'Akkutípus', 'Akku_darab', 'Használati_gyakoriság', 'Töltő_típus', 'Prioritás', 'Megjegyzés'];
             
             let csvContent = headers.join(',') + '\n';
             
@@ -871,9 +908,9 @@
                     device.location,
                     device.batteryType,
                     device.batteryCount,
+                    device.usageFrequency || '',
                     device.chargerType,
-                    device.minCapacity || '',
-                    device.maxCapacity || '',
+                    device.priority || '',
                     device.notes || ''
                 ];
                 csvContent += row.join(',') + '\n';
