@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eszköz Lista - Akkumulátor Menedzser</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            opacity: 0.8;
+            font-size: 0.9rem;
+        }
+
+        .controls {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .file-input {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745, #1e7e34);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #ffc107, #e0a800);
+            color: #212529;
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 193, 7, 0.3);
+        }
+
+        .search-box {
+            flex-grow: 1;
+            min-width: 200px;
+            padding: 10px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            max-height: 70vh;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th, td {
+            padding: 12px 8px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+            font-size: 14px;
+        }
+
+        th {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            font-weight: 600;
+            color: #495057;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-active { background: #28a745; }
+        .status-maintenance { background: #ffc107; }
+        .status-inactive { background: #6c757d; }
+
+        .device-location {
+            font-weight: 500;
+            color: #007bff;
+        }
+
+        .device-type {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            color: white;
+        }
+
+        .type-tool { background: #dc3545; }
+        .type-light { background: #ffc107; color: #212529; }
+        .type-electronics { background: #17a2b8; }
+        .type-other { background: #6c757d; }
+
+        .capacity-range {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #495057;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            padding: 20px;
+            border-radius: 15px 15px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        .close {
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            opacity: 0.8;
+        }
+
+        .close:hover {
+            opacity: 1;
+        }
+
+        .stats {
+            padding: 15px 20px;
+            background: linear-gradient(135deg, #e8f4fd, #d1ecf1);
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .stat-item h3 {
+            color: #007bff;
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+
+        .stat-item p {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .btn {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+
+            .search-box {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+
+            th, td {
+                padding: 8px 4px;
+                font-size: 12px;
+            }
+
+            .modal-content {
+                width: 95%;
+                margin: 10% auto;
+            }
+
+            .form-row {
+                flex-direction: column;
+            }
+
+            .stats {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔋 Eszköz Lista</h1>
+            <p>Akkumulátoros eszközök nyilvántartása</p>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <h3 id="totalDevices">0</h3>
+                <p>Összes eszköz</p>
+            </div>
+            <div class="stat-item">
+                <h3 id="activeDevices">0</h3>
+                <p>Aktív eszköz</p>
+            </div>
+            <div class="stat-item">
+                <h3 id="totalBatteries">0</h3>
+                <p>Akkumulátor db</p>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="file-input-wrapper">
+                <input type="file" id="csvFileInput" class="file-input" accept=".csv" />
+                <label for="csvFileInput" class="btn btn-primary">📁 CSV Betöltés</label>
+            </div>
+            
+            <button class="btn btn-success" onclick="addDevice()">➕ Új Eszköz</button>
+            <button class="btn btn-warning" onclick="exportCSV()">💾 CSV Exportálás</button>
+            
+            <input type="text" id="searchInput" class="search-box" placeholder="🔍 Keresés eszköz név, hely vagy típus alapján..." />
+        </div>
+
+        <div class="table-container">
+            <table id="deviceTable">
+                <thead>
+                    <tr>
+                        <th>Státusz</th>
+                        <th>Eszköz ID</th>
+                        <th>Eszköz Név</th>
+                        <th>Hely</th>
+                        <th>Akku Típus</th>
+                        <th>Db</th>
+                        <th>Töltő</th>
+                        <th>Kapacitás (mAh)</th>
+                        <th>Megjegyzés</th>
+                        <th>Műveletek</th>
+                    </tr>
+                </thead>
+                <tbody id="deviceTableBody">
+                    <!-- Dinamikusan töltődik -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Eszköz hozzáadás/szerkesztés modal -->
+    <div id="deviceModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Új Eszköz Hozzáadása</h2>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="deviceForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="deviceId">Eszköz ID:</label>
+                            <input type="text" id="deviceId" class="form-control" required />
+                        </div>
+                        <div class="form-group">
+                            <label for="deviceName">Eszköz Név:</label>
+                            <input type="text" id="deviceName" class="form-control" required />
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="deviceLocation">Hely:</label>
+                            <input type="text" id="deviceLocation" class="form-control" required />
+                        </div>
+                        <div class="form-group">
+                            <label for="batteryType">Akku Típus:</label>
+                            <select id="batteryType" class="form-control" required>
+                                <option value="">Válassz típust...</option>
+                                <option value="NiMH_AA">NiMH AA</option>
+                                <option value="NiMH_AAA">NiMH AAA</option>
+                                <option value="Li-ion_18V">Li-ion 18V</option>
+                                <option value="Li-ion_12V">Li-ion 12V</option>
+                                <option value="Li-ion_18650">Li-ion 18650</option>
+                                <option value="Li-ion_beépített">Li-ion beépített</option>
+                                <option value="Egyéb">Egyéb</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="batteryCount">Akku Darabszám:</label>
+                            <input type="number" id="batteryCount" class="form-control" min="1" value="1" required />
+                        </div>
+                        <div class="form-group">
+                            <label for="chargerType">Töltő Típus:</label>
+                            <select id="chargerType" class="form-control" required>
+                                <option value="">Válassz töltő típust...</option>
+                                <option value="Gyári_töltő">Gyári töltő</option>
+                                <option value="Univerzális_töltő">Univerzális töltő</option>
+                                <option value="Alapzat_töltő">Alapzat töltő</option>
+                                <option value="USB-C">USB-C</option>
+                                <option value="Micro-USB">Micro-USB</option>
+                                <option value="USB-A">USB-A</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="minCapacity">Min. Kapacitás (mAh):</label>
+                            <input type="number" id="minCapacity" class="form-control" min="0" step="100" />
+                        </div>
+                        <div class="form-group">
+                            <label for="maxCapacity">Max. Kapacitás (mAh):</label>
+                            <input type="number" id="maxCapacity" class="form-control" min="0" step="100" />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="notes">Megjegyzés:</label>
+                        <input type="text" id="notes" class="form-control" placeholder="Opcionális megjegyzés..." />
+                    </div>
+
+                    <div style="text-align: right; margin-top: 20px;">
+                        <button type="button" class="btn" style="background: #6c757d; color: white; margin-right: 10px;" onclick="closeModal()">Mégse</button>
+                        <button type="submit" class="btn btn-primary">💾 Mentés</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let devices = [];
+        let editingIndex = -1;
+
+        // Alapértelmezett eszközök példaként
+        const sampleDevices = [
+            {
+                id: "ESZ001",
+                name: "Fúrógép Bosch",
+                location: "Műhely",
+                batteryType: "Li-ion_18V",
+                batteryCount: 1,
+                chargerType: "Gyári_töltő",
+                minCapacity: 4000,
+                maxCapacity: 5000,
+                notes: "Piros színű",
+                status: "active"
+            },
+            {
+                id: "ESZ002",
+                name: "LED Lámpa",
+                location: "Hálószoba",
+                batteryType: "NiMH_AA",
+                batteryCount: 4,
+                chargerType: "Alapzat_töltő",
+                minCapacity: 2000,
+                maxCapacity: 2500,
+                notes: "Éjjeliszekrényen",
+                status: "active"
+            },
+            {
+                id: "ESZ003",
+                name: "Távirányító",
+                location: "Nappali",
+                batteryType: "NiMH_AA",
+                batteryCount: 2,
+                chargerType: "Univerzális_töltő",
+                minCapacity: 800,
+                maxCapacity: 2500,
+                notes: "Sony távirányító",
+                status: "active"
+            }
+        ];
+
+        // Oldal betöltésekor
+        document.addEventListener('DOMContentLoaded', function() {
+            devices = [...sampleDevices];
+            renderDeviceTable();
+            updateStats();
+            
+            // Keresés funkcionalitás
+            document.getElementById('searchInput').addEventListener('input', function() {
+                renderDeviceTable();
+            });
+
+            // CSV fájl beolvasás
+            document.getElementById('csvFileInput').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            parseCSV(e.target.result);
+                        } catch (error) {
+                            alert('Hiba a CSV fájl beolvasásakor: ' + error.message);
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            });
+
+            // Form submit
+            document.getElementById('deviceForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                saveDevice();
+            });
+        });
+
+        function renderDeviceTable() {
+            const tbody = document.getElementById('deviceTableBody');
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            
+            let filteredDevices = devices;
+            if (searchTerm) {
+                filteredDevices = devices.filter(device => 
+                    device.name.toLowerCase().includes(searchTerm) ||
+                    device.location.toLowerCase().includes(searchTerm) ||
+                    device.batteryType.toLowerCase().includes(searchTerm) ||
+                    device.id.toLowerCase().includes(searchTerm)
+                );
+            }
+
+            tbody.innerHTML = '';
+            filteredDevices.forEach((device, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <span class="status-indicator status-${device.status || 'active'}"></span>
+                        ${getStatusText(device.status || 'active')}
+                    </td>
+                    <td><strong>${device.id}</strong></td>
+                    <td>${device.name}</td>
+                    <td><span class="device-location">${device.location}</span></td>
+                    <td><span class="device-type ${getTypeClass(device.batteryType)}">${device.batteryType}</span></td>
+                    <td><strong>${device.batteryCount}</strong></td>
+                    <td>${device.chargerType}</td>
+                    <td><span class="capacity-range">${device.minCapacity || '-'} - ${device.maxCapacity || '-'}</span></td>
+                    <td>${device.notes || '-'}</td>
+                    <td>
+                        <button class="btn btn-primary" style="padding: 5px 10px; font-size: 12px; margin-right: 5px;" onclick="editDevice(${devices.indexOf(device)})">✏️</button>
+                        <button class="btn" style="background: #dc3545; color: white; padding: 5px 10px; font-size: 12px;" onclick="deleteDevice(${devices.indexOf(device)})">🗑️</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function getStatusText(status) {
+            const statusMap = {
+                'active': 'Aktív',
+                'maintenance': 'Karbantartás',
+                'inactive': 'Inaktív'
+            };
+            return statusMap[status] || 'Aktív';
+        }
+
+        function getTypeClass(batteryType) {
+            if (batteryType.includes('Li-ion')) return 'type-tool';
+            if (batteryType.includes('NiMH')) return 'type-electronics';
+            if (batteryType.includes('LED') || batteryType.includes('Lámpa')) return 'type-light';
+            return 'type-other';
+        }
+
+        function updateStats() {
+            document.getElementById('totalDevices').textContent = devices.length;
+            document.getElementById('activeDevices').textContent = devices.filter(d => (d.status || 'active') === 'active').length;
+            document.getElementById('totalBatteries').textContent = devices.reduce((sum, d) => sum + d.batteryCount, 0);
+        }
+
+        function addDevice() {
+            editingIndex = -1;
+            document.getElementById('modalTitle').textContent = 'Új Eszköz Hozzáadása';
+            document.getElementById('deviceForm').reset();
+            document.getElementById('deviceModal').style.display = 'block';
+        }
+
+        function editDevice(index) {
+            editingIndex = index;
+            const device = devices[index];
+            document.getElementById('modalTitle').textContent = 'Eszköz Szerkesztése';
+            
+            document.getElementById('deviceId').value = device.id;
+            document.getElementById('deviceName').value = device.name;
+            document.getElementById('deviceLocation').value = device.location;
+            document.getElementById('batteryType').value = device.batteryType;
+            document.getElementById('batteryCount').value = device.batteryCount;
+            document.getElementById('chargerType').value = device.chargerType;
+            document.getElementById('minCapacity').value = device.minCapacity || '';
+            document.getElementById('maxCapacity').value = device.maxCapacity || '';
+            document.getElementById('notes').value = device.notes || '';
+            
+            document.getElementById('deviceModal').style.display = 'block';
+        }
+
+        function deleteDevice(index) {
+            if (confirm('Biztosan törölni szeretnéd ezt az eszközt?')) {
+                devices.splice(index, 1);
+                renderDeviceTable();
+                updateStats();
+            }
+        }
+
+        function saveDevice() {
+            const device = {
+                id: document.getElementById('deviceId').value,
+                name: document.getElementById('deviceName').value,
+                location: document.getElementById('deviceLocation').value,
+                batteryType: document.getElementById('batteryType').value,
+                batteryCount: parseInt(document.getElementById('batteryCount').value),
+                chargerType: document.getElementById('chargerType').value,
+                minCapacity: parseInt(document.getElementById('minCapacity').value) || null,
+                maxCapacity: parseInt(document.getElementById('maxCapacity').value) || null,
+                notes: document.getElementById('notes').value,
+                status: 'active'
+            };
+
+            // Validáció
+            if (editingIndex === -1 && devices.some(d => d.id === device.id)) {
+                alert('Már létezik eszköz ezzel az ID-val!');
+                return;
+            }
+
+            if (device.minCapacity && device.maxCapacity && device.minCapacity > device.maxCapacity) {
+                alert('A minimum kapacitás nem lehet nagyobb a maximumnál!');
+                return;
+            }
+
+            if (editingIndex === -1) {
+                devices.push(device);
+            } else {
+                devices[editingIndex] = device;
+            }
+
+            closeModal();
+            renderDeviceTable();
+            updateStats();
+        }
+
+        function closeModal() {
+            document.getElementById('deviceModal').style.display = 'none';
+        }
+
+        function parseCSV(csvText) {
+            const lines = csvText.trim().split('\n');
+            if (lines.length < 2) {
+                throw new Error('A CSV fájl nem tartalmaz elég sort!');
+            }
+
+            const headers = lines[0].split(',').map(h => h.trim());
+            const newDevices = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',').map(v => v.trim());
+                if (values.length !== headers.length) continue;
+
+                const device = {};
+                headers.forEach((header, index) => {
+                    device[header] = values[index];
+                });
+
+                // Átalakítás a belső formátumra
+                newDevices.push({
+                    id: device.Eszköz_ID || device.id || `ESZ${String(i).padStart(3, '0')}`,
+                    name: device.Eszköz_név || device.name || 'Névtelen eszköz',
+                    location: device.Hely || device.location || 'Ismeretlen',
+                    batteryType: device.Akkutípus || device.batteryType || 'Egyéb',
+                    batteryCount: parseInt(device.Akku_darab || device.batteryCount) || 1,
+                    chargerType: device.Töltő_típus || device.chargerType || 'Egyéb',
+                    minCapacity: parseInt(device.Min_kapacitás_mAh || device.minCapacity) || null,
+                    maxCapacity: parseInt(device.Max_kapacitás_mAh || device.maxCapacity) || null,
+                    notes: device.Megjegyzés || device.notes || '',
+                    status: 'active'
+                });
+            }
+
+            devices = newDevices;
+            renderDeviceTable();
+            updateStats();
+            alert(`${newDevices.length} eszköz sikeresen betöltve!`);
+        }
+
+        function exportCSV() {
+            const headers = ['Eszköz_ID', 'Eszköz_név', 'Hely', 'Akkutípus', 'Akku_darab', 'Töltő_típus', 'Min_kapacitás_mAh', 'Max_kapacitás_mAh', 'Megjegyzés'];
+            
+            let csvContent = headers.join(',') + '\n';
+            
+            devices.forEach(device => {
+                const row = [
+                    device.id,
+                    device.name,
+                    device.location,
+                    device.batteryType,
+                    device.batteryCount,
+                    device.chargerType,
+                    device.minCapacity || '',
+                    device.maxCapacity || '',
+                    device.notes || ''
+                ];
+                csvContent += row.join(',') + '\n';
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `eszközök_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Modal bezárása kattintásra
+        window.onclick = function(event) {
+            const modal = document.getElementById('deviceModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+    </script>
+</body>
+</html>
