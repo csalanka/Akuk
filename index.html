@@ -385,9 +385,9 @@
             <button class="btn btn-primary" onclick="document.getElementById('csvFileInput').click()" style="margin-left: 10px;">📂 Alternatív CSV Betöltés</button>
             
             <button class="btn btn-success" onclick="addDevice()">➕ Új Eszköz</button>
-            <button class="btn btn-warning" onclick="exportCSV()">💾 CSV Exportálás</button>
-            <button class="btn btn-warning" onclick="exportCleanCSV()" style="margin-left: 5px;">💾 Tiszta CSV</button>
-            <button class="btn btn-warning" onclick="showCSVText()" style="margin-left: 5px;">👁 CSV Szöveg</button>
+            <button class="btn btn-warning" onclick="showCSVText(',')">📄 CSV (vessző)</button>
+            <button class="btn btn-warning" onclick="showCSVText(';')" style="margin-left: 5px;">📄 CSV (pontosvessző)</button>
+            <button class="btn btn-warning" onclick="showCSVText('\t')" style="margin-left: 5px;">📄 TSV (tab)</button>
             
             <input type="text" id="searchInput" class="search-box" placeholder="🔍 Keresés eszköz név, hely vagy típus alapján..." />
         </div>
@@ -1013,16 +1013,32 @@
                 csvText += row.join(',') + '\n';
             });
 
-            // Modal-szerű megjelenítés
-            const textWindow = window.open('', '_blank', 'width=600,height=400');
+            // Jobb megjelenítés tablet-ra optimalizálva
+            const textWindow = window.open('', '_blank', 'width=800,height=600');
             textWindow.document.write(`
                 <html>
-                <head><title>CSV Szöveg - Másoláshoz</title></head>
-                <body style="font-family: monospace; padding: 20px;">
-                    <h3>CSV szöveg - másold ki és mentsd .csv kiterjesztéssel:</h3>
-                    <textarea style="width: 100%; height: 300px; font-family: monospace;">${csvText}</textarea>
-                    <br><br>
-                    <button onclick="navigator.clipboard.writeText(document.querySelector('textarea').value).then(() => alert('Vágólapra másolva!')).catch(() => alert('Másold ki manuálisan!'))">📋 Vágólapra</button>
+                <head>
+                    <title>CSV Export - ${devices.length} eszköz</title>
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 15px; }
+                        textarea { width: 100%; height: 400px; font-family: monospace; font-size: 12px; }
+                        .btn { padding: 15px 25px; margin: 10px 5px; font-size: 16px; border: none; border-radius: 5px; cursor: pointer; }
+                        .btn-primary { background: #007bff; color: white; }
+                        .btn-success { background: #28a745; color: white; }
+                        h3 { color: #333; }
+                        .info { background: #f8f9fa; padding: 10px; border-radius: 5px; margin: 10px 0; }
+                    </style>
+                </head>
+                <body>
+                    <h3>📋 CSV Export - ${devices.length} eszköz</h3>
+                    <div class="info">
+                        <strong>Használat:</strong> Jelöld ki az összes szöveget, másold ki, és illeszd be a CSV programodba.
+                    </div>
+                    <textarea id="csvTextarea" readonly>${csvText}</textarea>
+                    <br>
+                    <button class="btn btn-primary" onclick="navigator.clipboard.writeText(document.getElementById('csvTextarea').value).then(() => alert('✅ Vágólapra másolva!')).catch(() => alert('⚠️ Másold ki manuálisan!'))">📋 Vágólapra másolás</button>
+                    <button class="btn btn-success" onclick="document.getElementById('csvTextarea').select(); document.getElementById('csvTextarea').setSelectionRange(0, 99999);">🎯 Szöveg kijelölése</button>
                 </body>
                 </html>
             `);
