@@ -404,7 +404,10 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="deviceId">Eszköz ID:</label>
-                            <input type="text" id="deviceId" class="form-control" required />
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" id="deviceId" class="form-control" required style="flex: 1;" />
+                                <button type="button" class="btn btn-primary" onclick="generateDeviceId()" style="padding: 10px 15px; white-space: nowrap;">🎲 Generál</button>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label for="deviceName">Eszköz Név:</label>
@@ -443,7 +446,7 @@
                                 <option value="">Válassz töltő típust...</option>
                                 <option value="Gyári_töltő">Gyári töltő</option>
                                 <option value="Univerzális_töltő">Univerzális töltő</option>
-                                <option value="Alapzat_töltő">Dokkoló töltő</option>
+                                <option value="Dokkoló_töltő">Dokkoló töltő</option>
                                 <option value="USB-C">USB-C</option>
                                 <option value="Micro-USB">Micro-USB</option>
                                 <option value="USB-A">USB-A</option>
@@ -500,7 +503,7 @@
                 location: "Hálószoba",
                 batteryType: "NiMH_AA",
                 batteryCount: 4,
-                chargerType: "Alapzat_töltő",
+                chargerType: "Dokkoló_töltő",
                 minCapacity: 2000,
                 maxCapacity: 2500,
                 notes: "Éjjeliszekrényen",
