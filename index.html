@@ -386,7 +386,7 @@
             
             <button class="btn btn-success" onclick="addDevice()">➕ Új Eszköz</button>
             <button class="btn btn-warning" onclick="exportCSV()">💾 CSV Exportálás</button>
-            <button class="btn btn-warning" onclick="exportSimpleCSV()" style="margin-left: 5px;">💾 Egyszerű CSV</button>
+            <button class="btn btn-warning" onclick="exportCleanCSV()" style="margin-left: 5px;">💾 Tiszta CSV</button>
             <button class="btn btn-warning" onclick="showCSVText()" style="margin-left: 5px;">👁 CSV Szöveg</button>
             
             <input type="text" id="searchInput" class="search-box" placeholder="🔍 Keresés eszköz név, hely vagy típus alapján..." />
@@ -1026,6 +1026,79 @@
                 </body>
                 </html>
             `);
+        }
+
+        function exportCleanCSV() {
+            if (devices.length === 0) {
+                alert('Nincsenek eszközök az exportáláshoz!');
+                return;
+            }
+
+            // Tiszta, egyszerű CSV - ékezetek nélkül, pontosvesszővel elválasztva
+            const headers = ['ID', 'Nev', 'Hely', 'Tipus', 'Darab', 'Gyakori', 'Tolto', 'Prior', 'Toltes', 'Megjegy'];
+            let csvContent = headers.join(';') + '\n';
+            
+            devices.forEach(device => {
+                // Ékezetek eltávolítása és tisztítás
+                const cleanText = (text) => {
+                    if (!text) return '';
+                    return text.toString()
+                        .replace(/[áàâäã]/g, 'a')
+                        .replace(/[éèêë]/g, 'e')
+                        .replace(/[íìîï]/g, 'i')
+                        .replace(/[óòôöõ]/g, 'o')
+                        .replace(/[úùûü]/g, 'u')
+                        .replace(/[ýÿ]/g, 'y')
+                        .replace(/[ñ]/g, 'n')
+                        .replace(/[ç]/g, 'c')
+                        .replace(/[ß]/g, 'ss')
+                        .replace(/[ÁÀÂÄÃ]/g, 'A')
+                        .replace(/[ÉÈÊË]/g, 'E')
+                        .replace(/[ÍÌÎÏ]/g, 'I')
+                        .replace(/[ÓÒÔÖÕ]/g, 'O')
+                        .replace(/[ÚÙÛÜ]/g, 'U')
+                        .replace(/[Ý]/g, 'Y')
+                        .replace(/[Ñ]/g, 'N')
+                        .replace(/[Ç]/g, 'C')
+                        .replace(/[ő]/g, 'o')
+                        .replace(/[ű]/g, 'u')
+                        .replace(/[Ő]/g, 'O')
+                        .replace(/[Ű]/g, 'U')
+                        .replace(/[,;]/g, ' ') // Vesszók és pontosvesszők eltávolítása
+                        .trim();
+                };
+
+                const row = [
+                    cleanText(device.id),
+                    cleanText(device.name),
+                    cleanText(device.location),
+                    cleanText(device.batteryType),
+                    device.batteryCount || 1,
+                    cleanText(device.usageFrequency),
+                    cleanText(device.chargerType),
+                    cleanText(device.priority),
+                    device.lastCharge || '',
+                    cleanText(device.notes)
+                ];
+                csvContent += row.join(';') + '\n';
+            });
+
+            console.log('Tiszta CSV:');
+            console.log(csvContent);
+
+            // Egyszerű ASCII szöveg
+            const blob = new Blob([csvContent], { type: 'text/plain;charset=ascii' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'eszkozok_tiszta.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            alert('Tiszta ASCII CSV mentve (ekezetek nelkul)!');
         }
 
         function exportSimpleCSV() {
