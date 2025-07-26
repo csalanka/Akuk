@@ -385,9 +385,8 @@
             <button class="btn btn-primary" onclick="document.getElementById('csvFileInput').click()" style="margin-left: 10px;">📂 Alternatív CSV Betöltés</button>
             
             <button class="btn btn-success" onclick="addDevice()">➕ Új Eszköz</button>
-            <button class="btn btn-warning" onclick="showCSVText(',')">📄 CSV (vessző)</button>
-            <button class="btn btn-warning" onclick="showCSVText(';')" style="margin-left: 5px;">📄 CSV (pontosvessző)</button>
-            <button class="btn btn-warning" onclick="showCSVText('\t')" style="margin-left: 5px;">📄 TSV (tab)</button>
+            <button class="btn btn-warning" onclick="exportCSVCompatible()">💾 CSV (Kompatibilis)</button>
+            <button class="btn btn-warning" onclick="showCSVText(',')" style="margin-left: 5px;">👁 CSV Szöveg</button>
             
             <input type="text" id="searchInput" class="search-box" placeholder="🔍 Keresés eszköz név, hely vagy típus alapján..." />
         </div>
@@ -1154,6 +1153,67 @@
             URL.revokeObjectURL(url);
             
             alert('Egyszerű CSV mentve!');
+        }
+
+        function exportCSVCompatible() {
+            if (devices.length === 0) {
+                alert('Nincsenek eszközök az exportáláshoz!');
+                return;
+            }
+
+            // Pontosan úgy formázunk, ahogy a CSV szerkesztőd várja
+            const headers = ['Eszköz_ID', 'Eszköz_név', 'Hely', 'Akkutípus', 'Akku_darab', 'Használati_gyakoriság', 'Töltő_típus', 'Prioritás', 'Utolsó_töltés', 'Megjegyzés'];
+            
+            let csvContent = '';
+            
+            // Fejléc sor
+            csvContent += headers.map(header => {
+                // Csak akkor idézőjel, ha vessző van benne
+                return header.includes(',') ? `"${header.replace(/"/g, '""')}"` : header;
+            }).join(',') + '\n';
+            
+            // Adat sorok
+            devices.forEach(device => {
+                const row = [
+                    device.id || '',
+                    device.name || '',
+                    device.location || '',
+                    device.batteryType || '',
+                    device.batteryCount || 1,
+                    device.usageFrequency || '',
+                    device.chargerType || '',
+                    device.priority || '',
+                    device.lastCharge || '',
+                    device.notes || ''
+                ];
+                
+                // Minden cellát ellenőrzünk: csak akkor idézőjel, ha vessző van benne
+                csvContent += row.map(cell => {
+                    const cellStr = String(cell);
+                    return cellStr.includes(',') ? `"${cellStr.replace(/"/g, '""')}"` : cellStr;
+                }).join(',') + '\n';
+            });
+
+            console.log('Kompatibilis CSV:');
+            console.log(csvContent);
+
+            // Tiszta UTF-8, BOM nélkül
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            
+            const timestamp = new Date().toISOString().split('T')[0];
+            const filename = `eszközök_kompatibilis_${timestamp}.csv`;
+            link.setAttribute('download', filename);
+            
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            alert(`✅ ${devices.length} eszköz exportálva CSV szerkesztő formátumban: ${filename}`);
         }
 
         function exportCSV() {
