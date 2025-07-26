@@ -591,15 +591,29 @@
             document.getElementById('csvFileInput').addEventListener('change', function(e) {
                 const file = e.target.files[0];
                 if (file) {
+                    if (!file.name.toLowerCase().endsWith('.csv')) {
+                        alert('Kérlek, csak CSV fájlt válassz!');
+                        this.value = ''; // Input reset
+                        return;
+                    }
+                    
                     const reader = new FileReader();
                     reader.onload = function(e) {
                         try {
                             parseCSV(e.target.result);
+                            // Input mező tisztítása a sikeres beolvasás után
+                            document.getElementById('csvFileInput').value = '';
                         } catch (error) {
                             alert('Hiba a CSV fájl beolvasásakor: ' + error.message);
+                            console.error('CSV parse error:', error);
                         }
                     };
-                    reader.readAsText(file);
+                    reader.onerror = function() {
+                        alert('Hiba a fájl olvasásakor!');
+                    };
+                    reader.readAsText(file, 'UTF-8');
+                } else {
+                    alert('Nincs fájl kiválasztva!');
                 }
             });
 
@@ -878,43 +892,75 @@
         }
 
         function parseCSV(csvText) {
+            console.log('CSV content:', csvText); // Debug
+            
             const lines = csvText.trim().split('\n');
             if (lines.length < 2) {
                 throw new Error('A CSV fájl nem tartalmaz elég sort!');
             }
 
-            const headers = lines[0].split(',').map(h => h.trim());
+            // UTF-8 BOM eltávolítása ha van
+            let headers = lines[0].replace(/^\uFEFF/, '').split(',').map(h => h.trim().replace(/"/g, ''));
+            console.log('Headers:', headers); // Debug
+            
             const newDevices = [];
 
             for (let i = 1; i < lines.length; i++) {
-                const values = lines[i].split(',').map(v => v.trim());
-                if (values.length !== headers.length) continue;
+                const line = lines[i].trim();
+                if (!line) continue; // Üres sorok átugrása
+                
+                let values = line.split(',').map(v => v.trim().replace(/"/g, ''));
+                console.log(`Row ${i}:`, values); // Debug
+                
+                if (values.length < headers.length) {
+                    console.warn(`Sor ${i} kihagyva - nem elég oszlop`);
+                    continue;
+                }
 
                 const device = {};
                 headers.forEach((header, index) => {
-                    device[header] = values[index];
+                    device[header] = values[index] || '';
                 });
 
-                // Átalakítás a belső formátumra
-                newDevices.push({
-                    id: device.Eszköz_ID || device.id || `ESZ${String(i).padStart(3, '0')}`,
-                    name: device.Eszköz_név || device.name || 'Névtelen eszköz',
-                    location: device.Hely || device.location || 'Ismeretlen',
-                    batteryType: device.Akkutípus || device.batteryType || 'Egyéb',
-                    batteryCount: parseInt(device.Akku_darab || device.batteryCount) || 1,
-                    chargerType: device.Töltő_típus || device.chargerType || 'Egyéb',
-                    usageFrequency: device.Használati_gyakoriság || device.usageFrequency || '',
-                    priority: device.Prioritás || device.priority || '',
-                    lastCharge: device.Utolsó_töltés || device.lastCharge || null,
-                    notes: device.Megjegyzés || device.notes || '',
+                // Átalakítás a belső formátumra - rugalmas fejléc kezelés
+                const newDevice = {
+                    id: device['Eszköz_ID'] || device['Eszköz ID'] || device['id'] || device['ID'] || `ESZ${String(i).padStart(3, '0')}`,
+                    name: device['Eszköz_név'] || device['Eszköz név'] || device['name'] || device['Name'] || 'Névtelen eszköz',
+                    location: device['Hely'] || device['location'] || device['Location'] || 'Ismeretlen',
+                    batteryType: device['Akkutípus'] || device['Akku típus'] || device['batteryType'] || device['Battery Type'] || 'Egyéb',
+                    batteryCount: parseInt(device['Akku_darab'] || device['Akku darab'] || device['batteryCount'] || device['Battery Count'] || '1') || 1,
+                    chargerType: device['Töltő_típus'] || device['Töltő típus'] || device['chargerType'] || device['Charger Type'] || 'Egyéb',
+                    usageFrequency: device['Használati_gyakoriság'] || device['Használati gyakoriság'] || device['usageFrequency'] || device['Usage Frequency'] || '',
+                    priority: device['Prioritás'] || device['priority'] || device['Priority'] || '',
+                    lastCharge: device['Utolsó_töltés'] || device['Utolsó töltés'] || device['lastCharge'] || device['Last Charge'] || null,
+                    notes: device['Megjegyzés'] || device['notes'] || device['Notes'] || '',
                     status: 'active'
-                });
+                };
+
+                // Üres ID-k kezelése
+                if (!newDevice.id || newDevice.id === '') {
+                    newDevice.id = `ESZ${String(newDevices.length + 1).padStart(3, '0')}`;
+                }
+
+                newDevices.push(newDevice);
+                console.log('Added device:', newDevice); // Debug
+            }
+
+            if (newDevices.length === 0) {
+                throw new Error('Nem sikerült egyetlen eszközt sem beolvasni a CSV fájlból!');
+            }
+
+            // Megerősítés kérése a felülírás előtt
+            if (devices.length > 0) {
+                if (!confirm(`${newDevices.length} eszköz lesz betöltve. Ez felülírja a jelenlegi ${devices.length} eszközt. Folytatod?`)) {
+                    return;
+                }
             }
 
             devices = newDevices;
             renderDeviceTable();
             updateStats();
-            alert(`${newDevices.length} eszköz sikeresen betöltve!`);
+            alert(`✅ ${newDevices.length} eszköz sikeresen betöltve!`);
         }
 
         function exportCSV() {
