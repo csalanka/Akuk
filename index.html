@@ -9,22 +9,7 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-        function closeModal() {
-            document.getElementById('deviceModal').style.display = 'none';
         }
-
-        // Modal bezárása X gombbal és háttérre kattintással
-        document.addEventListener('DOMContentLoaded', function() {
-            // ... existing code ...
-            
-            // Modal bezárása
-            document.querySelector('.close').addEventListener('click', closeModal);
-            document.getElementById('deviceModal').addEventListener('click', function(e) {
-                if (e.target === this) {
-                    closeModal();
-                }
-            });
-        });
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -651,6 +636,7 @@
 
             tbody.innerHTML = '';
             filteredDevices.forEach((device, index) => {
+                const actualIndex = devices.indexOf(device);
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>
@@ -673,13 +659,20 @@
                         }
                     </td>
                     <td>
-                        <button class="btn btn-success" style="padding: 4px 8px; font-size: 11px; margin-right: 3px;" onclick="startCharging(${devices.indexOf(device)})" title="Töltés indítás">🔋</button>
-                        <button class="btn btn-primary" style="padding: 4px 8px; font-size: 11px; margin-right: 3px;" onclick="editDevice(${devices.indexOf(device)})" title="Szerkesztés">✏️</button>
-                        <button class="btn" style="background: #dc3545; color: white; padding: 4px 8px; font-size: 11px;" onclick="deleteDevice(${devices.indexOf(device)})" title="Törlés">🗑️</button>
+                        <button class="btn btn-success" style="padding: 4px 8px; font-size: 11px; margin-right: 3px;" onclick="startCharging(${actualIndex})" title="Töltés indítás">🔋</button>
+                        <button class="btn btn-primary" style="padding: 4px 8px; font-size: 11px; margin-right: 3px;" onclick="editDevice(${actualIndex})" title="Szerkesztés">✏️</button>
+                        <button class="btn" style="background: #dc3545; color: white; padding: 4px 8px; font-size: 11px;" onclick="deleteDevice(${actualIndex})" title="Törlés">🗑️</button>
                     </td>
                 `;
                 tbody.appendChild(row);
             });
+        }
+
+        function startCharging(index) {
+            const today = new Date().toISOString().split('T')[0];
+            devices[index].lastCharge = today;
+            renderDeviceTable();
+            alert(`${devices[index].name} töltése megkezdve!`);
         }
 
         function getStatusText(status) {
@@ -701,6 +694,16 @@
                 'Vészhelyzeti': 'freq-veszhelyzeti'
             };
             return freqMap[frequency] || '';
+        }
+
+        function getPriorityClass(priority) {
+            const priorityMap = {
+                'Kritikus': 'priority-kritikus',
+                'Fontos': 'priority-fontos',
+                'Normál': 'priority-normal',
+                'Alacsony': 'priority-alacsony'
+            };
+            return priorityMap[priority] || '';
         }
 
         function formatDate(dateString) {
@@ -772,218 +775,3 @@
         function editDevice(index) {
             editingIndex = index;
             const device = devices[index];
-            document.getElementById('modalTitle').textContent = 'Eszköz Szerkesztése';
-            
-            document.getElementById('deviceId').value = device.id;
-            document.getElementById('deviceName').value = device.name;
-            
-            // Hely beállítás
-            const locationSelect = document.getElementById('deviceLocationSelect');
-            const locationInput = document.getElementById('deviceLocation');
-            const predefinedLocations = ['Műhely', 'Garázs', 'Pince', 'Konyha', 'Nappali', 'Hálószoba', 'Fürdőszoba', 'Kert', 'Táska', 'Autó', 'Iroda'];
-            
-            if (predefinedLocations.includes(device.location)) {
-                locationSelect.value = device.location;
-                locationInput.style.display = 'none';
-                locationInput.required = false;
-            } else {
-                locationSelect.value = 'Egyéb';
-                locationInput.style.display = 'block';
-                locationInput.required = true;
-                locationInput.value = device.location;
-            }
-            
-            document.getElementById('batteryType').value = device.batteryType;
-            document.getElementById('batteryCount').value = device.batteryCount;
-            document.getElementById('usageFrequency').value = device.usageFrequency || '';
-            document.getElementById('chargerType').value = device.chargerType;
-            document.getElementById('priority').value = device.priority || '';
-            document.getElementById('lastCharge').value = device.lastCharge || '';
-            document.getElementById('notes').value = device.notes || '';
-            
-            document.getElementById('deviceModal').style.display = 'block';
-        }
-
-        function deleteDevice(index) {
-            if (confirm('Biztosan törölni szeretnéd ezt az eszközt?')) {
-                devices.splice(index, 1);
-                renderDeviceTable();
-                updateStats();
-            }
-        }
-
-        function saveDevice() {
-            const locationSelect = document.getElementById('deviceLocationSelect');
-            const locationInput = document.getElementById('deviceLocation');
-            const location = locationSelect.value === 'Egyéb' ? locationInput.value : locationSelect.value;
-            
-            const device = {
-                id: document.getElementById('deviceId').value,
-                name: document.getElementById('deviceName').value,
-                location: location,
-                batteryType: document.getElementById('batteryType').value,
-                batteryCount: parseInt(document.getElementById('batteryCount').value),
-                usageFrequency: document.getElementById('usageFrequency').value,
-                chargerType: document.getElementById('chargerType').value,
-                priority: document.getElementById('priority').value,
-                lastCharge: document.getElementById('lastCharge').value || null,
-                notes: document.getElementById('notes').value,
-                status: 'active'
-            };
-
-            // Validáció
-            if (editingIndex === -1 && devices.some(d => d.id === device.id)) {
-                alert('Már létezik eszköz ezzel az ID-val!');
-                return;
-            }
-
-            if (!device.location) {
-                alert('A hely megadása kötelező!');
-                return;
-            }
-
-            if (editingIndex === -1) {
-                devices.push(device);
-            } else {
-                devices[editingIndex] = device;
-            }
-
-            closeModal();
-            renderDeviceTable();
-            updateStats();
-        }
-
-        function generateDeviceId() {
-            console.log("Generate ID called"); // Debug
-            const prefix = "ESZ";
-            let maxNum = 0;
-            
-            // Meglévő ID-k közül a legnagyobb szám megkeresése
-            devices.forEach(device => {
-                console.log("Checking device ID:", device.id); // Debug
-                const match = device.id.match(/^ESZ(\d+)$/);
-                if (match) {
-                    const num = parseInt(match[1]);
-                    console.log("Found ESZ number:", num); // Debug
-                    maxNum = Math.max(maxNum, num);
-                }
-            });
-            
-            const newId = prefix + String(maxNum + 1).padStart(3, '0');
-            console.log("Generated ID:", newId); // Debug
-            document.getElementById('deviceId').value = newId;
-        }
-
-        function generateDeviceId() {
-            const prefix = "ESZ";
-            let maxNum = 0;
-            
-            // Meglévő ID-k közül a legnagyobb szám megkeresése
-            devices.forEach(device => {
-                const match = device.id.match(/^ESZ(\d+)$/);
-                if (match) {
-                    maxNum = Math.max(maxNum, parseInt(match[1]));
-                }
-            });
-            
-            const newId = prefix + String(maxNum + 1).padStart(3, '0');
-            document.getElementById('deviceId').value = newId;
-        }
-
-        function handleLocationChange() {
-            const select = document.getElementById('deviceLocationSelect');
-            const input = document.getElementById('deviceLocation');
-            
-            if (select.value === 'Egyéb') {
-                input.style.display = 'block';
-                input.required = true;
-                input.value = '';
-                input.focus();
-            } else {
-                input.style.display = 'none';
-                input.required = false;
-                input.value = select.value;
-            }
-        }
-
-        function parseCSV(csvText) {
-            const lines = csvText.trim().split('\n');
-            if (lines.length < 2) {
-                throw new Error('A CSV fájl nem tartalmaz elég sort!');
-            }
-
-            const headers = lines[0].split(',').map(h => h.trim());
-            const newDevices = [];
-
-            for (let i = 1; i < lines.length; i++) {
-                const values = lines[i].split(',').map(v => v.trim());
-                if (values.length !== headers.length) continue;
-
-                const device = {};
-                headers.forEach((header, index) => {
-                    device[header] = values[index];
-                });
-
-                // Átalakítás a belső formátumra
-                newDevices.push({
-                    id: device.Eszköz_ID || device.id || `ESZ${String(i).padStart(3, '0')}`,
-                    name: device.Eszköz_név || device.name || 'Névtelen eszköz',
-                    location: device.Hely || device.location || 'Ismeretlen',
-                    batteryType: device.Akkutípus || device.batteryType || 'Egyéb',
-                    batteryCount: parseInt(device.Akku_darab || device.batteryCount) || 1,
-                    chargerType: device.Töltő_típus || device.chargerType || 'Egyéb',
-                    minCapacity: parseInt(device.Min_kapacitás_mAh || device.minCapacity) || null,
-                    maxCapacity: parseInt(device.Max_kapacitás_mAh || device.maxCapacity) || null,
-                    notes: device.Megjegyzés || device.notes || '',
-                    status: 'active'
-                });
-            }
-
-            devices = newDevices;
-            renderDeviceTable();
-            updateStats();
-            alert(`${newDevices.length} eszköz sikeresen betöltve!`);
-        }
-
-        function exportCSV() {
-            const headers = ['Eszköz_ID', 'Eszköz_név', 'Hely', 'Akkutípus', 'Akku_darab', 'Használati_gyakoriság', 'Töltő_típus', 'Prioritás', 'Utolsó_töltés', 'Megjegyzés'];
-            
-            let csvContent = headers.join(',') + '\n';
-            
-            devices.forEach(device => {
-                const row = [
-                    device.id,
-                    device.name,
-                    device.location,
-                    device.batteryType,
-                    device.batteryCount,
-                    device.usageFrequency || '',
-                    device.chargerType,
-                    device.priority || '',
-                    device.lastCharge || '',
-                    device.notes || ''
-                ];
-                csvContent += row.join(',') + '\n';
-            });
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', `eszközök_${new Date().toISOString().split('T')[0]}.csv`);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        // Modal bezárása kattintásra - ezt töröljük, mert fentebb már van
-        // window.onclick = function(event) {
-        //     const modal = document.getElementById('deviceModal');
-        //     if (event.target === modal) {
-        //         closeModal();
-        //     }
-        // }
-    </script>
-</body>
-</html>
