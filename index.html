@@ -13,6 +13,19 @@
             document.getElementById('deviceModal').style.display = 'none';
         }
 
+        // Modal bezárása X gombbal és háttérre kattintással
+        document.addEventListener('DOMContentLoaded', function() {
+            // ... existing code ...
+            
+            // Modal bezárása
+            document.querySelector('.close').addEventListener('click', closeModal);
+            document.getElementById('deviceModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeModal();
+                }
+            });
+        });
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -406,10 +419,7 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="deviceId">Eszköz ID:</label>
-                            <div style="display: flex; gap: 5px; align-items: stretch;">
-                                <input type="text" id="deviceId" class="form-control" required style="flex: 2;" />
-                                <button type="button" class="btn btn-primary" onclick="generateDeviceId()" style="flex: 0 0 auto; padding: 10px 12px; font-size: 12px;">🎲</button>
-                            </div>
+                            <input type="text" id="deviceId" class="form-control" required />
                         </div>
                         <div class="form-group">
                             <label for="deviceName">Eszköz Név:</label>
@@ -574,6 +584,16 @@
                 e.preventDefault();
                 saveDevice();
             });
+
+            // Modal bezárása X gombbal
+            document.querySelector('.close').addEventListener('click', closeModal);
+            
+            // Modal bezárása háttérre kattintással
+            document.getElementById('deviceModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeModal();
+                }
+            });
         });
 
         function renderDeviceTable() {
@@ -644,7 +664,19 @@
             document.getElementById('deviceLocationSelect').value = '';
             document.getElementById('deviceLocation').style.display = 'none';
             document.getElementById('deviceLocation').required = false;
-            generateDeviceId(); // Automatikus ID generálás
+            
+            // ID generálás automatikusan új eszköznél
+            const prefix = "ESZ";
+            let maxNum = 0;
+            devices.forEach(device => {
+                const match = device.id.match(/^ESZ(\d+)$/);
+                if (match) {
+                    maxNum = Math.max(maxNum, parseInt(match[1]));
+                }
+            });
+            const newId = prefix + String(maxNum + 1).padStart(3, '0');
+            document.getElementById('deviceId').value = newId;
+            
             document.getElementById('deviceModal').style.display = 'block';
         }
 
@@ -858,13 +890,13 @@
             document.body.removeChild(link);
         }
 
-        // Modal bezárása kattintásra
-        window.onclick = function(event) {
-            const modal = document.getElementById('deviceModal');
-            if (event.target === modal) {
-                closeModal();
-            }
-        }
+        // Modal bezárása kattintásra - ezt töröljük, mert fentebb már van
+        // window.onclick = function(event) {
+        //     const modal = document.getElementById('deviceModal');
+        //     if (event.target === modal) {
+        //         closeModal();
+        //     }
+        // }
     </script>
 </body>
 </html>
