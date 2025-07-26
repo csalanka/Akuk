@@ -412,6 +412,7 @@
                         <th>Gyakoriság</th>
                         <th>Prioritás</th>
                         <th>Megjegyzés</th>
+                        <th>Utolsó töltés</th>
                         <th>Műveletek</th>
                     </tr>
                 </thead>
@@ -524,6 +525,12 @@
                     </div>
 
                     <div class="form-group">
+                        <label for="lastCharge">Utolsó töltés:</label>
+                        <input type="date" id="lastCharge" class="form-control" />
+                        <small style="color: #6c757d; font-size: 12px;">Üresen hagyva = még nem töltve</small>
+                    </div>
+
+                    <div class="form-group">
                         <label for="notes">Megjegyzés:</label>
                         <input type="text" id="notes" class="form-control" placeholder="Opcionális megjegyzés..." />
                     </div>
@@ -552,6 +559,7 @@
                 chargerType: "Gyári_töltő",
                 usageFrequency: "Heti",
                 priority: "Fontos",
+                lastCharge: "2025-01-20",
                 notes: "Piros színű",
                 status: "active"
             },
@@ -564,6 +572,7 @@
                 chargerType: "Dokkoló_töltő",
                 usageFrequency: "Vészhelyzeti",
                 priority: "Kritikus",
+                lastCharge: "2025-01-15",
                 notes: "Éjjeliszekrényen",
                 status: "active"
             },
@@ -576,6 +585,7 @@
                 chargerType: "Univerzális_töltő",
                 usageFrequency: "Napi",
                 priority: "Normál",
+                lastCharge: null,
                 notes: "Sony távirányító",
                 status: "active"
             }
@@ -657,8 +667,15 @@
                     <td><span class="priority-badge ${getPriorityClass(device.priority)}">${device.priority || '-'}</span></td>
                     <td>${device.notes || '-'}</td>
                     <td>
-                        <button class="btn btn-primary" style="padding: 5px 10px; font-size: 12px; margin-right: 5px;" onclick="editDevice(${devices.indexOf(device)})">✏️</button>
-                        <button class="btn" style="background: #dc3545; color: white; padding: 5px 10px; font-size: 12px;" onclick="deleteDevice(${devices.indexOf(device)})">🗑️</button>
+                        ${device.lastCharge ? 
+                            `<span style="font-size: 12px; color: ${getChargeDateColor(device.lastCharge)}">${formatDate(device.lastCharge)}</span>` : 
+                            '<span style="color: #dc3545; font-size: 12px;">Nincs adat</span>'
+                        }
+                    </td>
+                    <td>
+                        <button class="btn btn-success" style="padding: 4px 8px; font-size: 11px; margin-right: 3px;" onclick="startCharging(${devices.indexOf(device)})" title="Töltés indítás">🔋</button>
+                        <button class="btn btn-primary" style="padding: 4px 8px; font-size: 11px; margin-right: 3px;" onclick="editDevice(${devices.indexOf(device)})" title="Szerkesztés">✏️</button>
+                        <button class="btn" style="background: #dc3545; color: white; padding: 4px 8px; font-size: 11px;" onclick="deleteDevice(${devices.indexOf(device)})" title="Törlés">🗑️</button>
                     </td>
                 `;
                 tbody.appendChild(row);
@@ -684,6 +701,36 @@
                 'Vészhelyzeti': 'freq-veszhelyzeti'
             };
             return freqMap[frequency] || '';
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'Nincs adat';
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffTime = Math.abs(now - date);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            const formatted = date.toLocaleDateString('hu-HU', { 
+                month: 'short', 
+                day: 'numeric' 
+            });
+            
+            if (diffDays === 0) return `${formatted} (ma)`;
+            if (diffDays === 1) return `${formatted} (tegnap)`;
+            if (diffDays <= 7) return `${formatted} (${diffDays} napja)`;
+            return `${formatted} (${diffDays} napja)`;
+        }
+
+        function getChargeDateColor(dateString) {
+            if (!dateString) return '#dc3545';
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffTime = Math.abs(now - date);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays <= 7) return '#28a745';      // Zöld - friss
+            if (diffDays <= 30) return '#ffc107';     // Sárga - közepes
+            return '#dc3545';                         // Piros - régi
         }
 
         function getTypeClass(batteryType) {
@@ -751,6 +798,7 @@
             document.getElementById('usageFrequency').value = device.usageFrequency || '';
             document.getElementById('chargerType').value = device.chargerType;
             document.getElementById('priority').value = device.priority || '';
+            document.getElementById('lastCharge').value = device.lastCharge || '';
             document.getElementById('notes').value = device.notes || '';
             
             document.getElementById('deviceModal').style.display = 'block';
@@ -778,6 +826,7 @@
                 usageFrequency: document.getElementById('usageFrequency').value,
                 chargerType: document.getElementById('chargerType').value,
                 priority: document.getElementById('priority').value,
+                lastCharge: document.getElementById('lastCharge').value || null,
                 notes: document.getElementById('notes').value,
                 status: 'active'
             };
@@ -897,7 +946,7 @@
         }
 
         function exportCSV() {
-            const headers = ['Eszköz_ID', 'Eszköz_név', 'Hely', 'Akkutípus', 'Akku_darab', 'Használati_gyakoriság', 'Töltő_típus', 'Prioritás', 'Megjegyzés'];
+            const headers = ['Eszköz_ID', 'Eszköz_név', 'Hely', 'Akkutípus', 'Akku_darab', 'Használati_gyakoriság', 'Töltő_típus', 'Prioritás', 'Utolsó_töltés', 'Megjegyzés'];
             
             let csvContent = headers.join(',') + '\n';
             
@@ -911,6 +960,7 @@
                     device.usageFrequency || '',
                     device.chargerType,
                     device.priority || '',
+                    device.lastCharge || '',
                     device.notes || ''
                 ];
                 csvContent += row.join(',') + '\n';
