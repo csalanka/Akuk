@@ -9,6 +9,8 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+        function closeModal() {
+            document.getElementById('deviceModal').style.display = 'none';
         }
 
         body {
@@ -418,7 +420,24 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="deviceLocation">Hely:</label>
-                            <input type="text" id="deviceLocation" class="form-control" required />
+                            <div style="display: flex; gap: 10px;">
+                                <select id="deviceLocationSelect" class="form-control" style="flex: 1;" onchange="handleLocationChange()">
+                                    <option value="">Válassz helyet...</option>
+                                    <option value="Műhely">Műhely</option>
+                                    <option value="Garázs">Garázs</option>
+                                    <option value="Pince">Pince</option>
+                                    <option value="Konyha">Konyha</option>
+                                    <option value="Nappali">Nappali</option>
+                                    <option value="Hálószoba">Hálószoba</option>
+                                    <option value="Fürdőszoba">Fürdőszoba</option>
+                                    <option value="Kert">Kert</option>
+                                    <option value="Táska">Táska</option>
+                                    <option value="Autó">Autó</option>
+                                    <option value="Iroda">Iroda</option>
+                                    <option value="Egyéb">Egyéb (írj be)</option>
+                                </select>
+                            </div>
+                            <input type="text" id="deviceLocation" class="form-control" style="margin-top: 10px; display: none;" placeholder="Írd be az egyéb helyet..." />
                         </div>
                         <div class="form-group">
                             <label for="batteryType">Akku Típus:</label>
@@ -622,6 +641,10 @@
             editingIndex = -1;
             document.getElementById('modalTitle').textContent = 'Új Eszköz Hozzáadása';
             document.getElementById('deviceForm').reset();
+            document.getElementById('deviceLocationSelect').value = '';
+            document.getElementById('deviceLocation').style.display = 'none';
+            document.getElementById('deviceLocation').required = false;
+            generateDeviceId(); // Automatikus ID generálás
             document.getElementById('deviceModal').style.display = 'block';
         }
 
@@ -632,7 +655,23 @@
             
             document.getElementById('deviceId').value = device.id;
             document.getElementById('deviceName').value = device.name;
-            document.getElementById('deviceLocation').value = device.location;
+            
+            // Hely beállítás
+            const locationSelect = document.getElementById('deviceLocationSelect');
+            const locationInput = document.getElementById('deviceLocation');
+            const predefinedLocations = ['Műhely', 'Garázs', 'Pince', 'Konyha', 'Nappali', 'Hálószoba', 'Fürdőszoba', 'Kert', 'Táska', 'Autó', 'Iroda'];
+            
+            if (predefinedLocations.includes(device.location)) {
+                locationSelect.value = device.location;
+                locationInput.style.display = 'none';
+                locationInput.required = false;
+            } else {
+                locationSelect.value = 'Egyéb';
+                locationInput.style.display = 'block';
+                locationInput.required = true;
+                locationInput.value = device.location;
+            }
+            
             document.getElementById('batteryType').value = device.batteryType;
             document.getElementById('batteryCount').value = device.batteryCount;
             document.getElementById('chargerType').value = device.chargerType;
@@ -652,10 +691,14 @@
         }
 
         function saveDevice() {
+            const locationSelect = document.getElementById('deviceLocationSelect');
+            const locationInput = document.getElementById('deviceLocation');
+            const location = locationSelect.value === 'Egyéb' ? locationInput.value : locationSelect.value;
+            
             const device = {
                 id: document.getElementById('deviceId').value,
                 name: document.getElementById('deviceName').value,
-                location: document.getElementById('deviceLocation').value,
+                location: location,
                 batteryType: document.getElementById('batteryType').value,
                 batteryCount: parseInt(document.getElementById('batteryCount').value),
                 chargerType: document.getElementById('chargerType').value,
@@ -668,6 +711,11 @@
             // Validáció
             if (editingIndex === -1 && devices.some(d => d.id === device.id)) {
                 alert('Már létezik eszköz ezzel az ID-val!');
+                return;
+            }
+
+            if (!device.location) {
+                alert('A hely megadása kötelező!');
                 return;
             }
 
@@ -687,8 +735,52 @@
             updateStats();
         }
 
-        function closeModal() {
-            document.getElementById('deviceModal').style.display = 'none';
+        function generateDeviceId() {
+            const prefix = "ESZ";
+            let maxNum = 0;
+            
+            // Meglévő ID-k közül a legnagyobb szám megkeresése
+            devices.forEach(device => {
+                const match = device.id.match(/^ESZ(\d+)$/);
+                if (match) {
+                    maxNum = Math.max(maxNum, parseInt(match[1]));
+                }
+            });
+            
+            const newId = prefix + String(maxNum + 1).padStart(3, '0');
+            document.getElementById('deviceId').value = newId;
+        }
+
+        function generateDeviceId() {
+            const prefix = "ESZ";
+            let maxNum = 0;
+            
+            // Meglévő ID-k közül a legnagyobb szám megkeresése
+            devices.forEach(device => {
+                const match = device.id.match(/^ESZ(\d+)$/);
+                if (match) {
+                    maxNum = Math.max(maxNum, parseInt(match[1]));
+                }
+            });
+            
+            const newId = prefix + String(maxNum + 1).padStart(3, '0');
+            document.getElementById('deviceId').value = newId;
+        }
+
+        function handleLocationChange() {
+            const select = document.getElementById('deviceLocationSelect');
+            const input = document.getElementById('deviceLocation');
+            
+            if (select.value === 'Egyéb') {
+                input.style.display = 'block';
+                input.required = true;
+                input.value = '';
+                input.focus();
+            } else {
+                input.style.display = 'none';
+                input.required = false;
+                input.value = select.value;
+            }
         }
 
         function parseCSV(csvText) {
