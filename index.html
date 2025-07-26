@@ -775,3 +775,178 @@
         function editDevice(index) {
             editingIndex = index;
             const device = devices[index];
+            document.getElementById('modalTitle').textContent = 'Eszköz Szerkesztése';
+            
+            document.getElementById('deviceId').value = device.id;
+            document.getElementById('deviceName').value = device.name;
+            
+            // Hely beállítás
+            const locationSelect = document.getElementById('deviceLocationSelect');
+            const locationInput = document.getElementById('deviceLocation');
+            const predefinedLocations = ['Műhely', 'Garázs', 'Pince', 'Konyha', 'Nappali', 'Hálószoba', 'Fürdőszoba', 'Kert', 'Táska', 'Autó', 'Iroda'];
+            
+            if (predefinedLocations.includes(device.location)) {
+                locationSelect.value = device.location;
+                locationInput.style.display = 'none';
+                locationInput.required = false;
+            } else {
+                locationSelect.value = 'Egyéb';
+                locationInput.style.display = 'block';
+                locationInput.required = true;
+                locationInput.value = device.location;
+            }
+            
+            document.getElementById('batteryType').value = device.batteryType;
+            document.getElementById('batteryCount').value = device.batteryCount;
+            document.getElementById('usageFrequency').value = device.usageFrequency || '';
+            document.getElementById('chargerType').value = device.chargerType;
+            document.getElementById('priority').value = device.priority || '';
+            document.getElementById('lastCharge').value = device.lastCharge || '';
+            document.getElementById('notes').value = device.notes || '';
+            
+            document.getElementById('deviceModal').style.display = 'block';
+        }
+
+        function deleteDevice(index) {
+            if (confirm('Biztosan törölni szeretnéd ezt az eszközt?')) {
+                devices.splice(index, 1);
+                renderDeviceTable();
+                updateStats();
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('deviceModal').style.display = 'none';
+        }
+
+        function saveDevice() {
+            const locationSelect = document.getElementById('deviceLocationSelect');
+            const locationInput = document.getElementById('deviceLocation');
+            const location = locationSelect.value === 'Egyéb' ? locationInput.value : locationSelect.value;
+            
+            const device = {
+                id: document.getElementById('deviceId').value,
+                name: document.getElementById('deviceName').value,
+                location: location,
+                batteryType: document.getElementById('batteryType').value,
+                batteryCount: parseInt(document.getElementById('batteryCount').value),
+                usageFrequency: document.getElementById('usageFrequency').value,
+                chargerType: document.getElementById('chargerType').value,
+                priority: document.getElementById('priority').value,
+                lastCharge: document.getElementById('lastCharge').value || null,
+                notes: document.getElementById('notes').value,
+                status: 'active'
+            };
+
+            // Validáció
+            if (editingIndex === -1 && devices.some(d => d.id === device.id)) {
+                alert('Már létezik eszköz ezzel az ID-val!');
+                return;
+            }
+
+            if (!device.location) {
+                alert('A hely megadása kötelező!');
+                return;
+            }
+
+            if (editingIndex === -1) {
+                devices.push(device);
+            } else {
+                devices[editingIndex] = device;
+            }
+
+            closeModal();
+            renderDeviceTable();
+            updateStats();
+        }
+
+        function handleLocationChange() {
+            const select = document.getElementById('deviceLocationSelect');
+            const input = document.getElementById('deviceLocation');
+            
+            if (select.value === 'Egyéb') {
+                input.style.display = 'block';
+                input.required = true;
+                input.value = '';
+                input.focus();
+            } else {
+                input.style.display = 'none';
+                input.required = false;
+                input.value = select.value;
+            }
+        }
+
+        function parseCSV(csvText) {
+            const lines = csvText.trim().split('\n');
+            if (lines.length < 2) {
+                throw new Error('A CSV fájl nem tartalmaz elég sort!');
+            }
+
+            const headers = lines[0].split(',').map(h => h.trim());
+            const newDevices = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',').map(v => v.trim());
+                if (values.length !== headers.length) continue;
+
+                const device = {};
+                headers.forEach((header, index) => {
+                    device[header] = values[index];
+                });
+
+                // Átalakítás a belső formátumra
+                newDevices.push({
+                    id: device.Eszköz_ID || device.id || `ESZ${String(i).padStart(3, '0')}`,
+                    name: device.Eszköz_név || device.name || 'Névtelen eszköz',
+                    location: device.Hely || device.location || 'Ismeretlen',
+                    batteryType: device.Akkutípus || device.batteryType || 'Egyéb',
+                    batteryCount: parseInt(device.Akku_darab || device.batteryCount) || 1,
+                    chargerType: device.Töltő_típus || device.chargerType || 'Egyéb',
+                    usageFrequency: device.Használati_gyakoriság || device.usageFrequency || '',
+                    priority: device.Prioritás || device.priority || '',
+                    lastCharge: device.Utolsó_töltés || device.lastCharge || null,
+                    notes: device.Megjegyzés || device.notes || '',
+                    status: 'active'
+                });
+            }
+
+            devices = newDevices;
+            renderDeviceTable();
+            updateStats();
+            alert(`${newDevices.length} eszköz sikeresen betöltve!`);
+        }
+
+        function exportCSV() {
+            const headers = ['Eszköz_ID', 'Eszköz_név', 'Hely', 'Akkutípus', 'Akku_darab', 'Használati_gyakoriság', 'Töltő_típus', 'Prioritás', 'Utolsó_töltés', 'Megjegyzés'];
+            
+            let csvContent = headers.join(',') + '\n';
+            
+            devices.forEach(device => {
+                const row = [
+                    device.id,
+                    device.name,
+                    device.location,
+                    device.batteryType,
+                    device.batteryCount,
+                    device.usageFrequency || '',
+                    device.chargerType,
+                    device.priority || '',
+                    device.lastCharge || '',
+                    device.notes || ''
+                ];
+                csvContent += row.join(',') + '\n';
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `eszközök_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
