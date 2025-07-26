@@ -672,7 +672,8 @@
             const today = new Date().toISOString().split('T')[0];
             devices[index].lastCharge = today;
             renderDeviceTable();
-            alert(`${devices[index].name} töltése megkezdve!`);
+            updateStats();
+            alert(`${devices[index].name} töltése megkezdve! Dátum frissítve: ${today}`);
         }
 
         function getStatusText(status) {
