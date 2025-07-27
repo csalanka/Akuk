@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eszköz Lista - v2.0.0</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .controls {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .search-box {
+            flex-grow: 1;
+            min-width: 200px;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th, td {
+            padding: 12px 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+            font-size: 14px;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: bold;
+            color: #333;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: black;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔋 Eszköz Lista v2.3.0</h1>
+            <p>Akkumulátoros eszközök nyilvántartása - SZŰRÉS TÍPUS/TÖLTŐ SZERINT</p>
+        </div>
+
+        <div class="controls">
+            <input type="file" id="csvFileInput" accept=".csv" style="margin-right: 10px;" />
+            <button class="btn btn-primary" onclick="loadCSV()">📁 CSV Betöltés</button>
+            <button class="btn btn-success" onclick="addDevice()">➕ Új Eszköz</button>
+            <button class="btn btn-warning" onclick="exportCSV()">💾 CSV Export</button>
+            <button class="btn btn-warning" onclick="showCSVText()">👁 CSV Szöveg</button>
+            
+            <!-- Szűrők -->
+            <select id="typeFilter" class="form-control" style="width: auto; margin-left: 10px;" onchange="renderTable()">
+                <option value="">🔋 Minden típus</option>
+                <option value="Li-ion_18V">Li-ion 18V</option>
+                <option value="Li-ion_12V">Li-ion 12V</option>
+                <option value="NiMH_AA">NiMH AA</option>
+                <option value="NiMH_AAA">NiMH AAA</option>
+                <option value="Li-ion_18650">Li-ion 18650</option>
+            </select>
+            
+            <select id="chargerFilter" class="form-control" style="width: auto; margin-left: 5px;" onchange="renderTable()">
+                <option value="">🔌 Minden töltő</option>
+                <option value="Gyari_tolto">Gyári töltő</option>
+                <option value="Univerzalis_tolto">Univerzális töltő</option>
+                <option value="Dokkolo_tolto">Dokkoló töltő</option>
+                <option value="USB-C">USB-C</option>
+                <option value="Micro-USB">Micro-USB</option>
+                <option value="USB-A">USB-A</option>
+                <option value="Lightning">Lightning</option>
+                <option value="Wireless">Vezeték nélküli</option>
+                <option value="12V_auto">12V autós</option>
+                <option value="230V_halozati">230V hálózati</option>
+            </select>
+            
+            <input type="text" id="searchInput" class="search-box" placeholder="🔍 Keresés név, hely szerint..." />
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Név</th>
+                    <th>Hely</th>
+                    <th>Típus</th>
+                    <th>Db</th>
+                    <th>Töltő</th>
+                    <th>Gyakoriság</th>
+                    <th>Utolsó töltés</th>
+                    <th>Megjegyzés</th>
+                    <th>Műveletek</th>
+                </tr>
+            </thead>
+            <tbody id="deviceTableBody">
+                <!-- Itt jelennek meg az adatok -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Modal új eszköz hozzáadásához -->
+    <div id="deviceModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2 id="modalTitle">Új Eszköz</h2>
+            <form id="deviceForm">
+                <div class="form-group">
+                    <label>Eszköz ID:</label>
+                    <input type="text" id="deviceId" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>Eszköz Név:</label>
+                    <input type="text" id="deviceName" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>Hely:</label>
+                    <input type="text" id="deviceLocation" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>Akkumulátor Típus:</label>
+                    <select id="batteryType" class="form-control" required>
+                        <option value="">Válassz...</option>
+                        <option value="Li-ion_18V">Li-ion 18V</option>
+                        <option value="Li-ion_12V">Li-ion 12V</option>
+                        <option value="NiMH_AA">NiMH AA</option>
+                        <option value="NiMH_AAA">NiMH AAA</option>
+                        <option value="Li-ion_18650">Li-ion 18650</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Darabszám:</label>
+                    <input type="number" id="batteryCount" class="form-control" min="1" value="1" required>
+                </div>
+                <div class="form-group">
+                    <label>Töltő:</label>
+                    <select id="chargerType" class="form-control" required>
+                        <option value="">Válassz töltő típust...</option>
+                        <option value="Gyari_tolto">Gyári töltő</option>
+                        <option value="Univerzalis_tolto">Univerzális töltő</option>
+                        <option value="Dokkolo_tolto">Dokkoló töltő</option>
+                        <option value="USB-C">USB-C</option>
+                        <option value="Micro-USB">Micro-USB</option>
+                        <option value="USB-A">USB-A</option>
+                        <option value="Lightning">Lightning</option>
+                        <option value="Wireless">Vezeték nélküli</option>
+                        <option value="12V_auto">12V autós</option>
+                        <option value="230V_halozati">230V hálózati</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Gyakoriság:</label>
+                    <select id="usageFrequency" class="form-control">
+                        <option value="">Válassz...</option>
+                        <option value="Napi">Napi</option>
+                        <option value="Heti">Heti</option>
+                        <option value="Havi">Havi</option>
+                        <option value="Alkalmi">Alkalmi</option>
+                        <option value="Veszhelyzeti">Vészhelyzeti</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Utolsó töltés:</label>
+                    <input type="date" id="lastCharge" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Megjegyzés:</label>
+                    <input type="text" id="notes" class="form-control">
+                </div>
+                <div style="text-align: right; margin-top: 20px;">
+                    <button type="button" class="btn" style="background: #6c757d; color: white;" onclick="closeModal()">Mégse</button>
+                    <button type="submit" class="btn btn-success" style="margin-left: 10px;">💾 Mentés</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // TISZTA KEZDÉS - Egyszerű adatstruktúra
+        let devices = [
+            {
+                id: "ESZ001",
+                name: "Furogep_Bosch",
+                location: "Muhely", 
+                batteryType: "Li-ion_18V",
+                batteryCount: 1,
+                chargerType: "Gyari_tolto",
+                usageFrequency: "Heti",
+                lastCharge: "2025-01-20",
+                notes: "Piros_szinu"
+            },
+            {
+                id: "ESZ002", 
+                name: "LED_Lampa",
+                location: "Haloszoba",
+                batteryType: "NiMH_AA", 
+                batteryCount: 4,
+                chargerType: "Dokkolo_tolto",
+                usageFrequency: "Veszhelyzeti",
+                lastCharge: "2025-01-15", 
+                notes: "Ejjeliszekrenyen"
+            },
+            {
+                id: "ESZ003",
+                name: "Taviranyito",
+                location: "Nappali",
+                batteryType: "NiMH_AA",
+                batteryCount: 2, 
+                chargerType: "Univerzalis_tolto",
+                usageFrequency: "Napi",
+                lastCharge: "2025-01-22",
+                notes: "Sony_taviranyito"
+            }
+        ];
+
+        let editingIndex = -1;
+
+        // Oldal betöltés
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Devices loaded:', devices);
+            renderTable();
+            
+            // Keresés
+            document.getElementById('searchInput').addEventListener('input', renderTable);
+            
+            // Form submit
+            document.getElementById('deviceForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                saveDevice();
+            });
+        });
+
+        // Táblázat megjelenítése - SZŰRÉSEKKEL
+        function renderTable() {
+            const tbody = document.getElementById('deviceTableBody');
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const typeFilter = document.getElementById('typeFilter').value;
+            const chargerFilter = document.getElementById('chargerFilter').value;
+            
+            let filteredDevices = devices;
+            
+            // Szöveges keresés (név, hely)
+            if (searchTerm) {
+                filteredDevices = filteredDevices.filter(device => 
+                    device.name.toLowerCase().includes(searchTerm) ||
+                    device.location.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            // Típus szűrés
+            if (typeFilter) {
+                filteredDevices = filteredDevices.filter(device => 
+                    device.batteryType === typeFilter
+                );
+            }
+            
+            // Töltő szűrés
+            if (chargerFilter) {
+                filteredDevices = filteredDevices.filter(device => 
+                    device.chargerType === chargerFilter
+                );
+            }
+
+            tbody.innerHTML = '';
+            filteredDevices.forEach((device, index) => {
+                const actualIndex = devices.indexOf(device);
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${device.id}</strong></td>
+                    <td>${device.name}</td>
+                    <td>${device.location}</td>
+                    <td><span style="background: #17a2b8; color: white; padding: 2px 6px; border-radius: 10px; font-size: 11px;">${device.batteryType}</span></td>
+                    <td>${device.batteryCount}</td>
+                    <td><span style="background: #6c757d; color: white; padding: 2px 6px; border-radius: 10px; font-size: 11px;">${device.chargerType}</span></td>
+                    <td>${device.usageFrequency || '-'}</td>
+                    <td>${device.lastCharge || 'Nincs adat'}</td>
+                    <td>${device.notes || '-'}</td>
+                    <td>
+                        <button class="btn btn-success" style="background: #28a745; color: white; padding: 5px 8px; font-size: 12px; margin-right: 3px;" onclick="chargeNow(${actualIndex})" title="Töltés most">🔋</button>
+                        <button class="btn btn-primary" style="padding: 5px 10px; font-size: 12px; margin-right: 5px;" onclick="editDevice(${actualIndex})">✏️</button>
+                        <button class="btn" style="background: #dc3545; color: white; padding: 5px 10px; font-size: 12px;" onclick="deleteDevice(${actualIndex})">🗑️</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            // Szűrés eredmény mutatása
+            const totalCount = devices.length;
+            const filteredCount = filteredDevices.length;
+            if (filteredCount !== totalCount) {
+                console.log(`Szűrés: ${filteredCount}/${totalCount} eszköz`);
+            }
+        }
+
+        // Új eszköz hozzáadása
+        function addDevice() {
+            editingIndex = -1;
+            document.getElementById('modalTitle').textContent = 'Új Eszköz';
+            document.getElementById('deviceForm').reset();
+            
+            // Automatikus ID generálás
+            const maxId = Math.max(...devices.map(d => parseInt(d.id.replace('ESZ', ''))));
+            document.getElementById('deviceId').value = `ESZ${String(maxId + 1).padStart(3, '0')}`;
+            
+            document.getElementById('deviceModal').style.display = 'block';
+        }
+
+        // Töltés most - dátum frissítése
+        function chargeNow(index) {
+            const today = new Date().toISOString().split('T')[0];
+            const deviceName = devices[index].name;
+            
+            devices[index].lastCharge = today;
+            renderTable();
+            
+            alert(`✅ ${deviceName} töltése megkezdve!\n📅 Dátum frissítve: ${today}`);
+        }
+
+        // Eszköz szerkesztése
+        function editDevice(index) {
+            editingIndex = index;
+            const device = devices[index];
+            document.getElementById('modalTitle').textContent = 'Eszköz Szerkesztése';
+            
+            document.getElementById('deviceId').value = device.id;
+            document.getElementById('deviceName').value = device.name;
+            document.getElementById('deviceLocation').value = device.location;
+            document.getElementById('batteryType').value = device.batteryType;
+            document.getElementById('batteryCount').value = device.batteryCount;
+            document.getElementById('chargerType').value = device.chargerType;
+            document.getElementById('usageFrequency').value = device.usageFrequency || '';
+            document.getElementById('lastCharge').value = device.lastCharge || '';
+            document.getElementById('notes').value = device.notes || '';
+            
+            document.getElementById('deviceModal').style.display = 'block';
+        }
+
+        // Eszköz törlése
+        function deleteDevice(index) {
+            if (confirm('Biztosan törölni szeretnéd ezt az eszközt?')) {
+                devices.splice(index, 1);
+                renderTable();
+            }
+        }
+
+        // Eszköz mentése
+        function saveDevice() {
+            const device = {
+                id: document.getElementById('deviceId').value,
+                name: document.getElementById('deviceName').value,
+                location: document.getElementById('deviceLocation').value,
+                batteryType: document.getElementById('batteryType').value,
+                batteryCount: parseInt(document.getElementById('batteryCount').value),
+                chargerType: document.getElementById('chargerType').value,
+                usageFrequency: document.getElementById('usageFrequency').value,
+                lastCharge: document.getElementById('lastCharge').value || null,
+                notes: document.getElementById('notes').value
+            };
+
+            if (editingIndex === -1) {
+                devices.push(device);
+            } else {
+                devices[editingIndex] = device;
+            }
+
+            closeModal();
+            renderTable();
+        }
+
+        // Modal bezárása
+        function closeModal() {
+            document.getElementById('deviceModal').style.display = 'none';
+        }
+
+        // CSV betöltés - PONTOSAN ugyanúgy mint a CSV szerkesztőben
+        function loadCSV() {
+            const fileInput = document.getElementById('csvFileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Kérlek, válassz ki egy CSV fájlt!');
+                return;
+            }
+
+            if (!file.name.toLowerCase().endsWith('.csv')) {
+                alert('Csak CSV fájlt tölthetsz be!');
+                return;
+            }
+
+            console.log('CSV fájl betöltése:', file.name);
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    // PONTOSAN ugyanaz a logika mint a CSV szerkesztőben
+                    const data = e.target.result;
+                    const text = new TextDecoder("utf-8").decode(data);
+                    const rows = text.trim().split("\n").map(row => row.split(","));
+                    
+                    console.log('CSV sorok:', rows);
+                    parseCSVRows(rows);
+                    
+                } catch (error) {
+                    console.error('Hiba a CSV feldolgozásban:', error);
+                    alert('Hiba történt a CSV fájl beolvasásakor: ' + error.message);
+                }
+            };
+
+            reader.onerror = function() {
+                alert('Hiba a fájl olvasásakor!');
+            };
+
+            // PONTOSAN ugyanúgy mint a CSV szerkesztőben
+            reader.readAsArrayBuffer(file);
+        }
+
+        // CSV sorok feldolgozása
+        function parseCSVRows(rows) {
+            if (!rows.length || !rows[0].length) {
+                alert("A CSV fájl érvénytelen vagy üres.");
+                return;
+            }
+
+            console.log('CSV fejléc:', rows[0]);
+            console.log('CSV adatok:', rows.slice(1));
+
+            // Fejléc elemzése
+            const headers = rows[0].map(h => h.trim());
+            const newDevices = [];
+
+            // Adatsorok feldolgozása
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i];
+                if (row.length === 0 || (row.length === 1 && row[0] === '')) {
+                    continue; // Üres sor kihagyása
+                }
+
+                console.log(`Sor ${i}:`, row);
+
+                // Eszköz objektum létrehozása
+                const device = {
+                    id: row[0] || `ESZ${String(i).padStart(3, '0')}`,
+                    name: row[1] || 'Névtelen eszköz',
+                    location: row[2] || 'Ismeretlen',
+                    batteryType: row[3] || 'Egyéb',
+                    batteryCount: parseInt(row[4]) || 1,
+                    chargerType: row[5] || 'Egyéb',
+                    usageFrequency: row[6] || '',
+                    lastCharge: row[7] || null,
+                    notes: row[8] || ''
+                };
+
+                newDevices.push(device);
+            }
+
+            if (newDevices.length === 0) {
+                alert('Nem sikerült egyetlen eszközt sem beolvasni!');
+                return;
+            }
+
+            // Megerősítés kérése
+            if (devices.length > 0) {
+                if (!confirm(`${newDevices.length} eszköz lesz betöltve. Ez felülírja a jelenlegi ${devices.length} eszközt. Folytatod?`)) {
+                    return;
+                }
+            }
+
+            // Eszközök felülírása
+            devices = newDevices;
+            renderTable();
+            
+            // Fájl input tisztítása
+            document.getElementById('csvFileInput').value = '';
+            
+            alert(`✅ ${newDevices.length} eszköz sikeresen betöltve!`);
+        }
+
+        // CSV Export
+        function exportCSV() {
+            if (devices.length === 0) {
+                alert('Nincsenek eszközök!');
+                return;
+            }
+
+            const headers = ['ID', 'Nev', 'Hely', 'Tipus', 'Darab', 'Tolto', 'Gyakorisag', 'Utolso_toltes', 'Megjegyzes'];
+            let csvContent = headers.join(',') + '\n';
+            
+            devices.forEach(device => {
+                const row = [
+                    device.id || '',
+                    device.name || '',
+                    device.location || '',
+                    device.batteryType || '',
+                    device.batteryCount || 1,
+                    device.chargerType || '',
+                    device.usageFrequency || '',
+                    device.lastCharge || '',
+                    device.notes || ''
+                ];
+                csvContent += row.join(',') + '\n';
+            });
+
+            console.log('CSV Export:');
+            console.log(csvContent);
+
+            const blob = new Blob([csvContent], { type: 'text/plain;charset=ascii' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `eszkozok_v2_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+            
+            alert('✅ CSV exportálva!');
+        }
+
+        // CSV Szöveg megjelenítése
+        function showCSVText() {
+            if (devices.length === 0) {
+                alert('Nincsenek eszközök!');
+                return;
+            }
+
+            const headers = ['ID', 'Nev', 'Hely', 'Tipus', 'Darab', 'Tolto', 'Gyakorisag', 'Utolso_toltes', 'Megjegyzes'];
+            let csvText = headers.join(',') + '\n';
+            
+            devices.forEach(device => {
+                const row = [
+                    device.id || '',
+                    device.name || '',
+                    device.location || '',
+                    device.batteryType || '',
+                    device.batteryCount || 1,
+                    device.chargerType || '',
+                    device.usageFrequency || '',
+                    device.lastCharge || '',
+                    device.notes || ''
+                ];
+                csvText += row.join(',') + '\n';
+            });
+
+            const textWindow = window.open('', '_blank', 'width=800,height=600');
+            textWindow.document.write(`
+                <html>
+                <head><title>CSV Export v2.0</title></head>
+                <body style="font-family: Arial; padding: 20px;">
+                    <h3>CSV Export - ${devices.length} eszköz</h3>
+                    <p>Másold ki az alábbi szöveget:</p>
+                    <textarea style="width: 100%; height: 400px; font-family: monospace;">${csvText}</textarea>
+                    <br><br>
+                    <button onclick="navigator.clipboard.writeText(document.querySelector('textarea').value).then(() => alert('Vágólapra másolva!')).catch(() => alert('Jelöld ki és másold manuálisan!'))">📋 Vágólapra</button>
+                </body>
+                </html>
+            `);
+        }
+
+        // Modal bezárása háttérre kattintással
+        window.onclick = function(event) {
+            const modal = document.getElementById('deviceModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+    </script>
+</body>
+</html>
