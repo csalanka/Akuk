@@ -164,8 +164,8 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔋 Eszköz Lista v2.2.0</h1>
-            <p>Akkumulátoros eszközök nyilvántartása - TÖLTŐ DROPDOWN + TÖLTÉS GOMB</p>
+            <h1>🔋 Eszköz Lista v2.3.0</h1>
+            <p>Akkumulátoros eszközök nyilvántartása - SZŰRÉS TÍPUS/TÖLTŐ SZERINT</p>
         </div>
 
         <div class="controls">
@@ -174,7 +174,32 @@
             <button class="btn btn-success" onclick="addDevice()">➕ Új Eszköz</button>
             <button class="btn btn-warning" onclick="exportCSV()">💾 CSV Export</button>
             <button class="btn btn-warning" onclick="showCSVText()">👁 CSV Szöveg</button>
-            <input type="text" id="searchInput" class="search-box" placeholder="🔍 Keresés..." />
+            
+            <!-- Szűrők -->
+            <select id="typeFilter" class="form-control" style="width: auto; margin-left: 10px;" onchange="renderTable()">
+                <option value="">🔋 Minden típus</option>
+                <option value="Li-ion_18V">Li-ion 18V</option>
+                <option value="Li-ion_12V">Li-ion 12V</option>
+                <option value="NiMH_AA">NiMH AA</option>
+                <option value="NiMH_AAA">NiMH AAA</option>
+                <option value="Li-ion_18650">Li-ion 18650</option>
+            </select>
+            
+            <select id="chargerFilter" class="form-control" style="width: auto; margin-left: 5px;" onchange="renderTable()">
+                <option value="">🔌 Minden töltő</option>
+                <option value="Gyari_tolto">Gyári töltő</option>
+                <option value="Univerzalis_tolto">Univerzális töltő</option>
+                <option value="Dokkolo_tolto">Dokkoló töltő</option>
+                <option value="USB-C">USB-C</option>
+                <option value="Micro-USB">Micro-USB</option>
+                <option value="USB-A">USB-A</option>
+                <option value="Lightning">Lightning</option>
+                <option value="Wireless">Vezeték nélküli</option>
+                <option value="12V_auto">12V autós</option>
+                <option value="230V_halozati">230V hálózati</option>
+            </select>
+            
+            <input type="text" id="searchInput" class="search-box" placeholder="🔍 Keresés név, hely szerint..." />
         </div>
 
         <table>
@@ -329,17 +354,34 @@
             });
         });
 
-        // Táblázat megjelenítése
+        // Táblázat megjelenítése - SZŰRÉSEKKEL
         function renderTable() {
             const tbody = document.getElementById('deviceTableBody');
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const typeFilter = document.getElementById('typeFilter').value;
+            const chargerFilter = document.getElementById('chargerFilter').value;
             
             let filteredDevices = devices;
+            
+            // Szöveges keresés (név, hely)
             if (searchTerm) {
-                filteredDevices = devices.filter(device => 
+                filteredDevices = filteredDevices.filter(device => 
                     device.name.toLowerCase().includes(searchTerm) ||
-                    device.location.toLowerCase().includes(searchTerm) ||
-                    device.batteryType.toLowerCase().includes(searchTerm)
+                    device.location.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            // Típus szűrés
+            if (typeFilter) {
+                filteredDevices = filteredDevices.filter(device => 
+                    device.batteryType === typeFilter
+                );
+            }
+            
+            // Töltő szűrés
+            if (chargerFilter) {
+                filteredDevices = filteredDevices.filter(device => 
+                    device.chargerType === chargerFilter
                 );
             }
 
@@ -351,9 +393,9 @@
                     <td><strong>${device.id}</strong></td>
                     <td>${device.name}</td>
                     <td>${device.location}</td>
-                    <td>${device.batteryType}</td>
+                    <td><span style="background: #17a2b8; color: white; padding: 2px 6px; border-radius: 10px; font-size: 11px;">${device.batteryType}</span></td>
                     <td>${device.batteryCount}</td>
-                    <td>${device.chargerType}</td>
+                    <td><span style="background: #6c757d; color: white; padding: 2px 6px; border-radius: 10px; font-size: 11px;">${device.chargerType}</span></td>
                     <td>${device.usageFrequency || '-'}</td>
                     <td>${device.lastCharge || 'Nincs adat'}</td>
                     <td>${device.notes || '-'}</td>
@@ -365,6 +407,13 @@
                 `;
                 tbody.appendChild(row);
             });
+            
+            // Szűrés eredmény mutatása
+            const totalCount = devices.length;
+            const filteredCount = filteredDevices.length;
+            if (filteredCount !== totalCount) {
+                console.log(`Szűrés: ${filteredCount}/${totalCount} eszköz`);
+            }
         }
 
         // Új eszköz hozzáadása
