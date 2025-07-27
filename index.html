@@ -1161,50 +1161,61 @@
                 return;
             }
 
-            // Pontosan úgy formázunk, ahogy a CSV szerkesztőd várja
-            const headers = ['Eszköz_ID', 'Eszköz_név', 'Hely', 'Akkutípus', 'Akku_darab', 'Használati_gyakoriság', 'Töltő_típus', 'Prioritás', 'Utolsó_töltés', 'Megjegyzés'];
+            // ASCII-only verzió ékezetek nélkül
+            const headers = ['ID', 'Nev', 'Hely', 'Tipus', 'Darab', 'Gyakorisag', 'Tolto', 'Prioritas', 'Utolso_toltes', 'Megjegyzes'];
+            
+            // Ékezetek eltávolítása
+            const removeAccents = (text) => {
+                if (!text) return '';
+                return String(text)
+                    .replace(/[áàâäã]/g, 'a').replace(/[ÁÀÂÄÃ]/g, 'A')
+                    .replace(/[éèêë]/g, 'e').replace(/[ÉÈÊË]/g, 'E')
+                    .replace(/[íìîï]/g, 'i').replace(/[ÍÌÎÏ]/g, 'I')
+                    .replace(/[óòôöõő]/g, 'o').replace(/[ÓÒÔÖÕŐ]/g, 'O')
+                    .replace(/[úùûüű]/g, 'u').replace(/[ÚÙÛÜŰ]/g, 'U')
+                    .replace(/[ýÿ]/g, 'y').replace(/[ÝŸ]/g, 'Y')
+                    .replace(/[ñ]/g, 'n').replace(/[Ñ]/g, 'N')
+                    .replace(/[ç]/g, 'c').replace(/[Ç]/g, 'C');
+            };
             
             let csvContent = '';
             
             // Fejléc sor
-            csvContent += headers.map(header => {
-                // Csak akkor idézőjel, ha vessző van benne
-                return header.includes(',') ? `"${header.replace(/"/g, '""')}"` : header;
-            }).join(',') + '\n';
+            csvContent += headers.join(',') + '\n';
             
             // Adat sorok
             devices.forEach(device => {
                 const row = [
-                    device.id || '',
-                    device.name || '',
-                    device.location || '',
-                    device.batteryType || '',
+                    removeAccents(device.id || ''),
+                    removeAccents(device.name || ''),
+                    removeAccents(device.location || ''),
+                    removeAccents(device.batteryType || ''),
                     device.batteryCount || 1,
-                    device.usageFrequency || '',
-                    device.chargerType || '',
-                    device.priority || '',
+                    removeAccents(device.usageFrequency || ''),
+                    removeAccents(device.chargerType || ''),
+                    removeAccents(device.priority || ''),
                     device.lastCharge || '',
-                    device.notes || ''
+                    removeAccents(device.notes || '')
                 ];
                 
-                // Minden cellát ellenőrzünk: csak akkor idézőjel, ha vessző van benne
+                // Egyszerű CSV - csak akkor idézőjel, ha vessző van
                 csvContent += row.map(cell => {
                     const cellStr = String(cell);
-                    return cellStr.includes(',') ? `"${cellStr.replace(/"/g, '""')}"` : cellStr;
+                    return cellStr.includes(',') ? `"${cellStr}"` : cellStr;
                 }).join(',') + '\n';
             });
 
-            console.log('Kompatibilis CSV:');
+            console.log('ASCII CSV:');
             console.log(csvContent);
 
-            // Tiszta UTF-8, BOM nélkül
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+            // Egyszerű text/plain ASCII
+            const blob = new Blob([csvContent], { type: 'text/plain;charset=ascii' });
             const link = document.createElement('a');
             const url = URL.createObjectURL(blob);
             link.setAttribute('href', url);
             
             const timestamp = new Date().toISOString().split('T')[0];
-            const filename = `eszközök_kompatibilis_${timestamp}.csv`;
+            const filename = `eszkozok_ascii_${timestamp}.csv`;
             link.setAttribute('download', filename);
             
             link.style.visibility = 'hidden';
@@ -1213,7 +1224,7 @@
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
             
-            alert(`✅ ${devices.length} eszköz exportálva CSV szerkesztő formátumban: ${filename}`);
+            alert(`✅ ASCII CSV exportálva (ékezetek nélkül): ${filename}`);
         }
 
         function exportCSV() {
