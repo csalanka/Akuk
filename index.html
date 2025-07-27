@@ -164,8 +164,8 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔋 Eszköz Lista v2.1.0</h1>
-            <p>Akkumulátoros eszközök nyilvántartása - CSV IMPORT HOZZÁADVA</p>
+            <h1>🔋 Eszköz Lista v2.2.0</h1>
+            <p>Akkumulátoros eszközök nyilvántartása - TÖLTŐ DROPDOWN + TÖLTÉS GOMB</p>
         </div>
 
         <div class="controls">
@@ -233,7 +233,19 @@
                 </div>
                 <div class="form-group">
                     <label>Töltő:</label>
-                    <input type="text" id="chargerType" class="form-control" required>
+                    <select id="chargerType" class="form-control" required>
+                        <option value="">Válassz töltő típust...</option>
+                        <option value="Gyari_tolto">Gyári töltő</option>
+                        <option value="Univerzalis_tolto">Univerzális töltő</option>
+                        <option value="Dokkolo_tolto">Dokkoló töltő</option>
+                        <option value="USB-C">USB-C</option>
+                        <option value="Micro-USB">Micro-USB</option>
+                        <option value="USB-A">USB-A</option>
+                        <option value="Lightning">Lightning</option>
+                        <option value="Wireless">Vezeték nélküli</option>
+                        <option value="12V_auto">12V autós</option>
+                        <option value="230V_halozati">230V hálózati</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label>Gyakoriság:</label>
@@ -346,6 +358,7 @@
                     <td>${device.lastCharge || 'Nincs adat'}</td>
                     <td>${device.notes || '-'}</td>
                     <td>
+                        <button class="btn btn-success" style="background: #28a745; color: white; padding: 5px 8px; font-size: 12px; margin-right: 3px;" onclick="chargeNow(${actualIndex})" title="Töltés most">🔋</button>
                         <button class="btn btn-primary" style="padding: 5px 10px; font-size: 12px; margin-right: 5px;" onclick="editDevice(${actualIndex})">✏️</button>
                         <button class="btn" style="background: #dc3545; color: white; padding: 5px 10px; font-size: 12px;" onclick="deleteDevice(${actualIndex})">🗑️</button>
                     </td>
@@ -365,6 +378,17 @@
             document.getElementById('deviceId').value = `ESZ${String(maxId + 1).padStart(3, '0')}`;
             
             document.getElementById('deviceModal').style.display = 'block';
+        }
+
+        // Töltés most - dátum frissítése
+        function chargeNow(index) {
+            const today = new Date().toISOString().split('T')[0];
+            const deviceName = devices[index].name;
+            
+            devices[index].lastCharge = today;
+            renderTable();
+            
+            alert(`✅ ${deviceName} töltése megkezdve!\n📅 Dátum frissítve: ${today}`);
         }
 
         // Eszköz szerkesztése
