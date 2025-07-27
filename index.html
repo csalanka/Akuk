@@ -164,11 +164,13 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔋 Eszköz Lista v2.0.0</h1>
-            <p>Akkumulátoros eszközök nyilvántartása - ÚJRAÍRVA</p>
+            <h1>🔋 Eszköz Lista v2.1.0</h1>
+            <p>Akkumulátoros eszközök nyilvántartása - CSV IMPORT HOZZÁADVA</p>
         </div>
 
         <div class="controls">
+            <input type="file" id="csvFileInput" accept=".csv" style="margin-right: 10px;" />
+            <button class="btn btn-primary" onclick="loadCSV()">📁 CSV Betöltés</button>
             <button class="btn btn-success" onclick="addDevice()">➕ Új Eszköz</button>
             <button class="btn btn-warning" onclick="exportCSV()">💾 CSV Export</button>
             <button class="btn btn-warning" onclick="showCSVText()">👁 CSV Szöveg</button>
@@ -419,6 +421,109 @@
         // Modal bezárása
         function closeModal() {
             document.getElementById('deviceModal').style.display = 'none';
+        }
+
+        // CSV betöltés - PONTOSAN ugyanúgy mint a CSV szerkesztőben
+        function loadCSV() {
+            const fileInput = document.getElementById('csvFileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Kérlek, válassz ki egy CSV fájlt!');
+                return;
+            }
+
+            if (!file.name.toLowerCase().endsWith('.csv')) {
+                alert('Csak CSV fájlt tölthetsz be!');
+                return;
+            }
+
+            console.log('CSV fájl betöltése:', file.name);
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    // PONTOSAN ugyanaz a logika mint a CSV szerkesztőben
+                    const data = e.target.result;
+                    const text = new TextDecoder("utf-8").decode(data);
+                    const rows = text.trim().split("\n").map(row => row.split(","));
+                    
+                    console.log('CSV sorok:', rows);
+                    parseCSVRows(rows);
+                    
+                } catch (error) {
+                    console.error('Hiba a CSV feldolgozásban:', error);
+                    alert('Hiba történt a CSV fájl beolvasásakor: ' + error.message);
+                }
+            };
+
+            reader.onerror = function() {
+                alert('Hiba a fájl olvasásakor!');
+            };
+
+            // PONTOSAN ugyanúgy mint a CSV szerkesztőben
+            reader.readAsArrayBuffer(file);
+        }
+
+        // CSV sorok feldolgozása
+        function parseCSVRows(rows) {
+            if (!rows.length || !rows[0].length) {
+                alert("A CSV fájl érvénytelen vagy üres.");
+                return;
+            }
+
+            console.log('CSV fejléc:', rows[0]);
+            console.log('CSV adatok:', rows.slice(1));
+
+            // Fejléc elemzése
+            const headers = rows[0].map(h => h.trim());
+            const newDevices = [];
+
+            // Adatsorok feldolgozása
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i];
+                if (row.length === 0 || (row.length === 1 && row[0] === '')) {
+                    continue; // Üres sor kihagyása
+                }
+
+                console.log(`Sor ${i}:`, row);
+
+                // Eszköz objektum létrehozása
+                const device = {
+                    id: row[0] || `ESZ${String(i).padStart(3, '0')}`,
+                    name: row[1] || 'Névtelen eszköz',
+                    location: row[2] || 'Ismeretlen',
+                    batteryType: row[3] || 'Egyéb',
+                    batteryCount: parseInt(row[4]) || 1,
+                    chargerType: row[5] || 'Egyéb',
+                    usageFrequency: row[6] || '',
+                    lastCharge: row[7] || null,
+                    notes: row[8] || ''
+                };
+
+                newDevices.push(device);
+            }
+
+            if (newDevices.length === 0) {
+                alert('Nem sikerült egyetlen eszközt sem beolvasni!');
+                return;
+            }
+
+            // Megerősítés kérése
+            if (devices.length > 0) {
+                if (!confirm(`${newDevices.length} eszköz lesz betöltve. Ez felülírja a jelenlegi ${devices.length} eszközt. Folytatod?`)) {
+                    return;
+                }
+            }
+
+            // Eszközök felülírása
+            devices = newDevices;
+            renderTable();
+            
+            // Fájl input tisztítása
+            document.getElementById('csvFileInput').value = '';
+            
+            alert(`✅ ${newDevices.length} eszköz sikeresen betöltve!`);
         }
 
         // CSV Export
