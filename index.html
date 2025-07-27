@@ -584,9 +584,55 @@
             }
         ];
 
-        // Oldal betöltésekor
+        // Oldal betöltésekor - FORCE RELOAD mintaadatok
         document.addEventListener('DOMContentLoaded', function() {
-            devices = [...sampleDevices];
+            // Tiszta kezdés - régi adatok törlése
+            devices = [];
+            
+            // Új ASCII mintaadatok betöltése
+            devices = [
+                {
+                    id: "ESZ001",
+                    name: "Furogep_Bosch",
+                    location: "Muhely",
+                    batteryType: "Li-ion_18V",
+                    batteryCount: 1,
+                    chargerType: "Gyari_tolto",
+                    usageFrequency: "Heti",
+                    priority: "Fontos",
+                    lastCharge: "2025-01-20",
+                    notes: "Piros_szinu",
+                    status: "active"
+                },
+                {
+                    id: "ESZ002",
+                    name: "LED_Lampa",
+                    location: "Haloszoba",
+                    batteryType: "NiMH_AA",
+                    batteryCount: 4,
+                    chargerType: "Dokkolo_tolto",
+                    usageFrequency: "Veszhelyzeti",
+                    priority: "Kritikus",
+                    lastCharge: "2025-01-15",
+                    notes: "Ejjeliszekrenyen",
+                    status: "active"
+                },
+                {
+                    id: "ESZ003",
+                    name: "Taviranyito",
+                    location: "Nappali",
+                    batteryType: "NiMH_AA",
+                    batteryCount: 2,
+                    chargerType: "Univerzalis_tolto",
+                    usageFrequency: "Napi",
+                    priority: "Normal",
+                    lastCharge: "2025-01-22",
+                    notes: "Sony_taviranyito",
+                    status: "active"
+                }
+            ];
+
+            console.log('Mintaadatok betöltve:', devices); // Debug
             renderDeviceTable();
             updateStats();
             
