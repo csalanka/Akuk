@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eszköz Lista - v2.0.0</title>
+    <title>Eszköz Lista - v2.3.0</title>
     <style>
         * {
             margin: 0;
@@ -50,11 +50,11 @@
         }
 
         .btn {
-            padding: 10px 20px;
+            padding: 6px 8px;
             border: none;
-            border-radius: 8px;
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 12px;
             transition: all 0.3s ease;
         }
 
@@ -87,14 +87,21 @@
             font-size: 14px;
         }
 
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
             background: white;
+            min-width: 900px;
         }
 
         th, td {
-            padding: 12px 8px;
+            padding: 10px 6px;
             text-align: left;
             border-bottom: 1px solid #ddd;
             font-size: 14px;
@@ -108,6 +115,13 @@
 
         tr:hover {
             background: #f8f9fa;
+        }
+
+        td:last-child {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            align-items: center;
         }
 
         .modal {
@@ -159,6 +173,37 @@
         .close:hover {
             color: black;
         }
+
+        @media screen and (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .controls {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .search-box, .form-control {
+                width: 100%;
+                font-size: 12px;
+            }
+
+            th, td {
+                padding: 8px 4px;
+                font-size: 12px;
+            }
+
+            .btn {
+                padding: 5px 6px;
+                font-size: 11px;
+            }
+
+            td:last-child {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
     </style>
 </head>
 <body>
@@ -175,7 +220,6 @@
             <button class="btn btn-warning" onclick="exportCSV()">💾 CSV Export</button>
             <button class="btn btn-warning" onclick="showCSVText()">👁 CSV Szöveg</button>
             
-            <!-- Szűrők -->
             <select id="typeFilter" class="form-control" style="width: auto; margin-left: 10px;" onchange="renderTable()">
                 <option value="">🔋 Minden típus</option>
                 <option value="Li-ion_18V">Li-ion 18V</option>
@@ -202,25 +246,27 @@
             <input type="text" id="searchInput" class="search-box" placeholder="🔍 Keresés név, hely szerint..." />
         </div>
 
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Név</th>
-                    <th>Hely</th>
-                    <th>Típus</th>
-                    <th>Db</th>
-                    <th>Töltő</th>
-                    <th>Gyakoriság</th>
-                    <th>Utolsó töltés</th>
-                    <th>Megjegyzés</th>
-                    <th>Műveletek</th>
-                </tr>
-            </thead>
-            <tbody id="deviceTableBody">
-                <!-- Itt jelennek meg az adatok -->
-            </tbody>
-        </table>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Név</th>
+                        <th>Hely</th>
+                        <th>Típus</th>
+                        <th>Db</th>
+                        <th>Töltő</th>
+                        <th>Gyakoriság</th>
+                        <th>Utolsó töltés</th>
+                        <th>Megjegyzés</th>
+                        <th>Műveletek</th>
+                    </tr>
+                </thead>
+                <tbody id="deviceTableBody">
+                    <!-- Itt jelennek meg az adatok -->
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <!-- Modal új eszköz hozzáadásához -->
@@ -300,7 +346,7 @@
     </div>
 
     <script>
-        // TISZTA KEZDÉS - Egyszerű adatstruktúra
+        // A JavaScript rész változatlan marad
         let devices = [
             {
                 id: "ESZ001",
@@ -339,22 +385,18 @@
 
         let editingIndex = -1;
 
-        // Oldal betöltés
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Devices loaded:', devices);
             renderTable();
             
-            // Keresés
             document.getElementById('searchInput').addEventListener('input', renderTable);
             
-            // Form submit
             document.getElementById('deviceForm').addEventListener('submit', function(e) {
                 e.preventDefault();
                 saveDevice();
             });
         });
 
-        // Táblázat megjelenítése - SZŰRÉSEKKEL
         function renderTable() {
             const tbody = document.getElementById('deviceTableBody');
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
@@ -363,7 +405,6 @@
             
             let filteredDevices = devices;
             
-            // Szöveges keresés (név, hely)
             if (searchTerm) {
                 filteredDevices = filteredDevices.filter(device => 
                     device.name.toLowerCase().includes(searchTerm) ||
@@ -371,14 +412,12 @@
                 );
             }
             
-            // Típus szűrés
             if (typeFilter) {
                 filteredDevices = filteredDevices.filter(device => 
                     device.batteryType === typeFilter
                 );
             }
             
-            // Töltő szűrés
             if (chargerFilter) {
                 filteredDevices = filteredDevices.filter(device => 
                     device.chargerType === chargerFilter
@@ -407,29 +446,19 @@
                 `;
                 tbody.appendChild(row);
             });
-            
-            // Szűrés eredmény mutatása
-            const totalCount = devices.length;
-            const filteredCount = filteredDevices.length;
-            if (filteredCount !== totalCount) {
-                console.log(`Szűrés: ${filteredCount}/${totalCount} eszköz`);
-            }
         }
 
-        // Új eszköz hozzáadása
         function addDevice() {
             editingIndex = -1;
             document.getElementById('modalTitle').textContent = 'Új Eszköz';
             document.getElementById('deviceForm').reset();
             
-            // Automatikus ID generálás
             const maxId = Math.max(...devices.map(d => parseInt(d.id.replace('ESZ', ''))));
             document.getElementById('deviceId').value = `ESZ${String(maxId + 1).padStart(3, '0')}`;
             
             document.getElementById('deviceModal').style.display = 'block';
         }
 
-        // Töltés most - dátum frissítése
         function chargeNow(index) {
             const today = new Date().toISOString().split('T')[0];
             const deviceName = devices[index].name;
@@ -440,7 +469,6 @@
             alert(`✅ ${deviceName} töltése megkezdve!\n📅 Dátum frissítve: ${today}`);
         }
 
-        // Eszköz szerkesztése
         function editDevice(index) {
             editingIndex = index;
             const device = devices[index];
@@ -459,7 +487,6 @@
             document.getElementById('deviceModal').style.display = 'block';
         }
 
-        // Eszköz törlése
         function deleteDevice(index) {
             if (confirm('Biztosan törölni szeretnéd ezt az eszközt?')) {
                 devices.splice(index, 1);
@@ -467,7 +494,6 @@
             }
         }
 
-        // Eszköz mentése
         function saveDevice() {
             const device = {
                 id: document.getElementById('deviceId').value,
@@ -491,12 +517,10 @@
             renderTable();
         }
 
-        // Modal bezárása
         function closeModal() {
             document.getElementById('deviceModal').style.display = 'none';
         }
 
-        // CSV betöltés - PONTOSAN ugyanúgy mint a CSV szerkesztőben
         function loadCSV() {
             const fileInput = document.getElementById('csvFileInput');
             const file = fileInput.files[0];
@@ -516,7 +540,6 @@
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
-                    // PONTOSAN ugyanaz a logika mint a CSV szerkesztőben
                     const data = e.target.result;
                     const text = new TextDecoder("utf-8").decode(data);
                     const rows = text.trim().split("\n").map(row => row.split(","));
@@ -534,11 +557,9 @@
                 alert('Hiba a fájl olvasásakor!');
             };
 
-            // PONTOSAN ugyanúgy mint a CSV szerkesztőben
             reader.readAsArrayBuffer(file);
         }
 
-        // CSV sorok feldolgozása
         function parseCSVRows(rows) {
             if (!rows.length || !rows[0].length) {
                 alert("A CSV fájl érvénytelen vagy üres.");
@@ -548,20 +569,17 @@
             console.log('CSV fejléc:', rows[0]);
             console.log('CSV adatok:', rows.slice(1));
 
-            // Fejléc elemzése
             const headers = rows[0].map(h => h.trim());
             const newDevices = [];
 
-            // Adatsorok feldolgozása
             for (let i = 1; i < rows.length; i++) {
                 const row = rows[i];
                 if (row.length === 0 || (row.length === 1 && row[0] === '')) {
-                    continue; // Üres sor kihagyása
+                    continue;
                 }
 
                 console.log(`Sor ${i}:`, row);
 
-                // Eszköz objektum létrehozása
                 const device = {
                     id: row[0] || `ESZ${String(i).padStart(3, '0')}`,
                     name: row[1] || 'Névtelen eszköz',
@@ -582,24 +600,20 @@
                 return;
             }
 
-            // Megerősítés kérése
             if (devices.length > 0) {
                 if (!confirm(`${newDevices.length} eszköz lesz betöltve. Ez felülírja a jelenlegi ${devices.length} eszközt. Folytatod?`)) {
                     return;
                 }
             }
 
-            // Eszközök felülírása
             devices = newDevices;
             renderTable();
             
-            // Fájl input tisztítása
             document.getElementById('csvFileInput').value = '';
             
             alert(`✅ ${newDevices.length} eszköz sikeresen betöltve!`);
         }
 
-        // CSV Export
         function exportCSV() {
             if (devices.length === 0) {
                 alert('Nincsenek eszközök!');
@@ -636,7 +650,6 @@
             alert('✅ CSV exportálva!');
         }
 
-        // CSV Szöveg megjelenítése
         function showCSVText() {
             if (devices.length === 0) {
                 alert('Nincsenek eszközök!');
@@ -664,7 +677,7 @@
             const textWindow = window.open('', '_blank', 'width=800,height=600');
             textWindow.document.write(`
                 <html>
-                <head><title>CSV Export v2.0</title></head>
+                <head><title>CSV Export v2.3.0</title></head>
                 <body style="font-family: Arial; padding: 20px;">
                     <h3>CSV Export - ${devices.length} eszköz</h3>
                     <p>Másold ki az alábbi szöveget:</p>
@@ -676,7 +689,6 @@
             `);
         }
 
-        // Modal bezárása háttérre kattintással
         window.onclick = function(event) {
             const modal = document.getElementById('deviceModal');
             if (event.target === modal) {
