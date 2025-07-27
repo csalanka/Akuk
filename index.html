@@ -212,6 +212,82 @@
             <p>Eszközök és akkumulátorok nyilvántartása</p>
         </div>
 
+    <!-- Eszköz modal -->
+    <div id="deviceModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2 id="modalTitle">Új Eszköz</h2>
+            <form id="deviceForm">
+                <div class="form-group">
+                    <label>Eszköz ID:</label>
+                    <input type="text" id="deviceId" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>Eszköz Név:</label>
+                    <input type="text" id="deviceName" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>Hely:</label>
+                    <input type="text" id="deviceLocation" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>Akkumulátor Típus:</label>
+                    <select id="batteryType" class="form-control" required>
+                        <option value="">Válassz...</option>
+                        <option value="Li-ion_18V">Li-ion 18V</option>
+                        <option value="Li-ion_12V">Li-ion 12V</option>
+                        <option value="NiMH_AA">NiMH AA</option>
+                        <option value="NiMH_AAA">NiMH AAA</option>
+                        <option value="Li-ion_18650">Li-ion 18650</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Darabszám:</label>
+                    <input type="number" id="batteryCount" class="form-control" min="1" value="1" required>
+                </div>
+                <div class="form-group">
+                    <label>Töltő:</label>
+                    <select id="chargerType" class="form-control" required>
+                        <option value="">Válassz töltő típust...</option>
+                        <option value="Gyari_tolto">Gyári töltő</option>
+                        <option value="Univerzalis_tolto">Univerzális töltő</option>
+                        <option value="Dokkolo_tolto">Dokkoló töltő</option>
+                        <option value="USB-C">USB-C</option>
+                        <option value="Micro-USB">Micro-USB</option>
+                        <option value="USB-A">USB-A</option>
+                        <option value="Lightning">Lightning</option>
+                        <option value="Wireless">Vezeték nélküli</option>
+                        <option value="12V_auto">12V autós</option>
+                        <option value="230V_halozati">230V hálózati</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Gyakoriság:</label>
+                    <select id="usageFrequency" class="form-control">
+                        <option value="">Válassz...</option>
+                        <option value="Napi">Napi</option>
+                        <option value="Heti">Heti</option>
+                        <option value="Havi">Havi</option>
+                        <option value="Alkalmi">Alkalmi</option>
+                        <option value="Veszhelyzeti">Vészhelyzeti</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Utolsó töltés:</label>
+                    <input type="date" id="lastCharge" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Megjegyzés:</label>
+                    <input type="text" id="notes" class="form-control">
+                </div>
+                <div style="text-align: right; margin-top: 20px;">
+                    <button type="button" class="btn" style="background: #6c757d; color: white;" onclick="closeModal()">Mégse</button>
+                    <button type="submit" class="btn btn-success" style="margin-left: 10px;">💾 Mentés</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
         <!-- AKKUMULÁTOROK TAB -->
         <div id="batteriesContent" class="tab-content">
             <div class="controls">
@@ -315,6 +391,60 @@
 
         <!-- ESZKÖZÖK TAB -->
         <div id="devicesContent" class="tab-content active">
+            <div class="controls">
+                <input type="file" id="csvFileInput" accept=".csv" style="margin-right: 10px;" />
+                <button class="btn btn-primary" onclick="loadCSV()">📁 CSV Betöltés</button>
+                <button class="btn btn-success" onclick="addDevice()">➕ Új Eszköz</button>
+                <button class="btn btn-warning" onclick="exportCSV()">💾 CSV Export</button>
+                <button class="btn btn-warning" onclick="showCSVText()">👁 CSV Szöveg</button>
+                
+                <!-- Szűrők -->
+                <select id="typeFilter" class="form-control" style="width: auto; margin-left: 10px;" onchange="renderTable()">
+                    <option value="">🔋 Minden típus</option>
+                    <option value="Li-ion_18V">Li-ion 18V</option>
+                    <option value="Li-ion_12V">Li-ion 12V</option>
+                    <option value="NiMH_AA">NiMH AA</option>
+                    <option value="NiMH_AAA">NiMH AAA</option>
+                    <option value="Li-ion_18650">Li-ion 18650</option>
+                </select>
+                
+                <select id="chargerFilter" class="form-control" style="width: auto; margin-left: 5px;" onchange="renderTable()">
+                    <option value="">🔌 Minden töltő</option>
+                    <option value="Gyari_tolto">Gyári töltő</option>
+                    <option value="Univerzalis_tolto">Univerzális töltő</option>
+                    <option value="Dokkolo_tolto">Dokkoló töltő</option>
+                    <option value="USB-C">USB-C</option>
+                    <option value="Micro-USB">Micro-USB</option>
+                    <option value="USB-A">USB-A</option>
+                    <option value="Lightning">Lightning</option>
+                    <option value="Wireless">Vezeték nélküli</option>
+                    <option value="12V_auto">12V autós</option>
+                    <option value="230V_halozati">230V hálózati</option>
+                </select>
+                
+                <input type="text" id="searchInput" class="search-box" placeholder="🔍 Keresés név, hely szerint..." />
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Név</th>
+                        <th>Hely</th>
+                        <th>Típus</th>
+                        <th>Db</th>
+                        <th>Töltő</th>
+                        <th>Gyakoriság</th>
+                        <th>Utolsó töltés</th>
+                        <th>Megjegyzés</th>
+                        <th>Műveletek</th>
+                    </tr>
+                </thead>
+                <tbody id="deviceTableBody">
+                    <!-- Itt jelennek meg az adatok -->
+                </tbody>
+            </table>
+        </div>
 
         <div class="controls">
             <input type="file" id="csvFileInput" accept=".csv" style="margin-right: 10px;" />
